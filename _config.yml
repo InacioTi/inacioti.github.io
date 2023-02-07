@@ -5,7 +5,7 @@ theme: dinky
 
 # Only if your site type is GitHub Project sites and doesn't have a custom domain,
 # change below value to '/projectname'.
-baseurl: ''
+baseurl: '/testePAGE'
 
 # The language of the webpage › http://www.lingoes.net/en/translator/langcode.htm
 # If it has the same name as one of the files in folder `_data/locales`, the layout language will also be changed,
@@ -80,7 +80,7 @@ theme_mode:  dark  # [light|dark]
 img_cdn: ''
 
 # the avatar on sidebar, support local or CORS resources
-avatar: https://h41stur.github.io/img/h41stur.jpeg
+avatar: ''
 
 # boolean type, the global switch for ToC in posts.
 toc: true
