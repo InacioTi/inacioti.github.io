@@ -18,7 +18,7 @@ timezone: America/Sao_Paulo
 # jekyll-seo-tag settings › https://github.com/jekyll/jekyll-seo-tag/blob/master/docs/usage.md
 # ↓ --------------------------
 
-title: H41stur                          # the main title
+title: Inaciot                          # the main title
 
 tagline: "Strange is the night where black stars rise, and strange moons circle through the skies, but stranger still is lost Carcosa."   # it will display as the sub-title
 
@@ -26,19 +26,19 @@ description: >-                        # used by seo meta and the atom feed
   "Strange is the night where black stars rise, and strange moons circle through the skies, but stranger still is lost Carcosa."
 
 # fill in the protocol & hostname for your site, e.g., 'https://username.github.io'
-url: 'https://h41stur.github.io'
+url: 'https://inacioti.github.io'
 
 github:
-  username: h41stur             # change to your github username
+  username: Inaciot             # change to your github username
 
 twitter:
-  username: twitter_username            # change to your twitter username
+  username: Inaciot            # change to your twitter username
 
 social:
   # Change to your full name.
   # It will be displayed as the default author of the posts and the copyright owner in the Footer
-  name: H41stur
-  email: leonardor.toledo@gmail.com             # change to your email address
+  name: Inaciot
+  email: jose.inaciot@outlook.com             # change to your email address
   links:
     # The first element serves as the copyright owner's link
     #- https://twitter.com/username      # change to your twitter homepage
