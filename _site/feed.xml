@@ -4,7 +4,7 @@
   <id>http://localhost:4000/</id>
   <title>Inaciot</title>
   <subtitle>A minimal, responsive, and powerful Jekyll theme for presenting professional writing.</subtitle>
-  <updated>2023-02-08T16:02:35-03:00</updated>
+  <updated>2023-02-08T19:06:09-03:00</updated>
   <author>
     <name>inaciot</name>
     <uri>http://localhost:4000/</uri>
@@ -20,87 +20,23 @@
 
   
   <entry>
-    <title></title>
-    <link href="http://localhost:4000/posts/2022-26-04-Threat-Hunting/" rel="alternate" type="text/html" title="" />
-    <published>2023-02-08T16:02:35-03:00</published>
+    <title>Lista OSINT</title>
+    <link href="http://localhost:4000/posts/Lista-OSINT/" rel="alternate" type="text/html" title="Lista OSINT" />
+    <published>2023-01-10T00:00:00-03:00</published>
   
-    <updated>2023-02-08T16:02:35-03:00</updated>
+    <updated>2023-01-10T00:00:00-03:00</updated>
   
-    <id>http://localhost:4000/posts/2022-26-04-Threat-Hunting/</id>
-    <content src="http://localhost:4000/posts/2022-26-04-Threat-Hunting/" />
+    <id>http://localhost:4000/posts/Lista-OSINT/</id>
+    <content src="http://localhost:4000/posts/Lista-OSINT/" />
     <author>
-      <name>inaciot</name>
-    </author>
-
-  
-    
-  
-
-  
-    <summary>
-      
-
-
-
-
-
-      Sabemos que o monitoramento desempenha um papel crucial na detecção e análise atividades maliciosas em um sistema. Com isso, resolvi criar esse laboratório para estudo pessoal com o intuito de monitorar e detectar logs de eventos, relacionados a atividades maliciosas usando o ELK Stack, usando o winlogbeat como ferramenta de envio de logs e configurando Sysmon para ajudar a identificar atividad...
-    </summary>
-  
-
-  </entry>
-
-  
-  <entry>
-    <title></title>
-    <link href="http://localhost:4000/posts/2019-08-09-Threat-hunting-with-ELK-Detectando-Eventos-do-Windows/" rel="alternate" type="text/html" title="" />
-    <published>2023-02-08T16:02:35-03:00</published>
-  
-    <updated>2023-02-08T16:02:35-03:00</updated>
-  
-    <id>http://localhost:4000/posts/2019-08-09-Threat-hunting-with-ELK-Detectando-Eventos-do-Windows/</id>
-    <content src="http://localhost:4000/posts/2019-08-09-Threat-hunting-with-ELK-Detectando-Eventos-do-Windows/" />
-    <author>
-      <name>inaciot</name>
-    </author>
-
-  
-    
-  
-
-  
-    <summary>
-      
-
-
-
-
-
-      Sabemos que o monitoramento desempenha um papel crucial na detecção e análise atividades maliciosas em um sistema. Com isso, resolvi criar esse laboratório para estudo pessoal com o intuito de monitorar e detectar logs de eventos, relacionados a atividades maliciosas usando o ELK Stack, usando o winlogbeat como ferramenta de envio de logs e configurando Sysmon para ajudar a identificar atividad...
-    </summary>
-  
-
-  </entry>
-
-  
-  <entry>
-    <title>Hardening Windows Server</title>
-    <link href="http://localhost:4000/posts/Hardening-Windows-Server/" rel="alternate" type="text/html" title="Hardening Windows Server" />
-    <published>2022-12-04T00:00:00-03:00</published>
-  
-    <updated>2022-12-04T00:00:00-03:00</updated>
-  
-    <id>http://localhost:4000/posts/Hardening-Windows-Server/</id>
-    <content src="http://localhost:4000/posts/Hardening-Windows-Server/" />
-    <author>
-      <name>Inácio</name>
+      <name>José Inácio</name>
     </author>
 
   
     
     <category term="Papers" />
     
-    <category term="Tutorial" />
+    <category term="Lista OSINT" />
     
   
 
@@ -112,11 +48,28 @@
 
 
 
-      Neste meu primeiro artigo, abordarei um termo revisado recentemente de um curso ao qual estou, Server Hardening.
+      Reuni algumas ‘tools/links’ sobre OSINT que anotei conforme fui encontrado pela WEB, acredito que possa agregar a quem venha ler este post.
 
-Sendo bem simplista, Hardening seria um conjunto de processos de reforço de segurança aplicadas ao sistema. A realização de hardening em sistemas não é apenas uma boa prática, em algumas áreas pode ser uma exigência regulamentar, o objetivo é minimizar os riscos à segurança.
+Quadros
 
-A ISO/...
+
+  
+    https://www.osinttechniques.com/osint-tools.html
+  
+  
+    https://start.me/p/L1rEYQ/osint4all
+  
+  
+    https://osintframework.com/
+  
+  
+    https://inteltechniques .com/tools/
+  
+  
+    https://www.osintdojo.com/resources
+  
+  
+    http...
     </summary>
   
 
@@ -124,23 +77,23 @@ A ISO/...
 
   
   <entry>
-    <title>Customize the Favicon</title>
-    <link href="http://localhost:4000/posts/customize-the-favicon/" rel="alternate" type="text/html" title="Customize the Favicon" />
-    <published>2019-08-10T13:34:00-03:00</published>
+    <title>Introducao ao DFIR</title>
+    <link href="http://localhost:4000/posts/Introducao-DFIR/" rel="alternate" type="text/html" title="Introducao ao DFIR" />
+    <published>2022-12-21T00:00:00-03:00</published>
   
-    <updated>2023-02-08T11:05:49-03:00</updated>
+    <updated>2023-02-08T17:51:25-03:00</updated>
   
-    <id>http://localhost:4000/posts/customize-the-favicon/</id>
-    <content src="http://localhost:4000/posts/customize-the-favicon/" />
+    <id>http://localhost:4000/posts/Introducao-DFIR/</id>
+    <content src="http://localhost:4000/posts/Introducao-DFIR/" />
     <author>
-      <name>cotes</name>
+      <name>José Inácio</name>
     </author>
 
   
     
-    <category term="Blogging" />
+    <category term="Papers" />
     
-    <category term="Tutorial" />
+    <category term="Introducao ao DFIR" />
     
   
 
@@ -152,11 +105,11 @@ A ISO/...
 
 
 
-      The favicons of Chirpy are placed in the directory assets/img/favicons/. You may want to replace them with your own. The following sections will guide you to create and replace the default favicons.
+      Com base nos últimos estudos que venho realizando sobre o assunto, me deparei com várias fontes de informações sobre o tema. Para fixação de aprendizado, resolvi tomar nota do que pude absorver durante esse processo.
 
-Generate the favicon
+DFIR?
 
-Prepare a square image (PNG, JPG, or SVG) with a size of 512x512 or more, and then go to the online tool Real Favicon Generator and click the button Select your Favicon image ...
+DFIR (Digital Forensics Incident Response) é uma das áreas de segurança cibernética. Uma equipe de DFIR é responsável por gerenciar a resposta a incidentes de segurança, in...
     </summary>
   
 
@@ -164,23 +117,23 @@ Prepare a square image (PNG, JPG, or SVG) with a size of 512x512 or more, and th
 
   
   <entry>
-    <title>Writing a New Post</title>
-    <link href="http://localhost:4000/posts/write-a-new-post/" rel="alternate" type="text/html" title="Writing a New Post" />
-    <published>2019-08-08T03:10:00-03:00</published>
+    <title>OSINT-DORK</title>
+    <link href="http://localhost:4000/posts/OSINT-DORK/" rel="alternate" type="text/html" title="OSINT-DORK" />
+    <published>2022-11-20T00:00:00-03:00</published>
   
-    <updated>2023-02-08T11:05:49-03:00</updated>
+    <updated>2022-11-20T00:00:00-03:00</updated>
   
-    <id>http://localhost:4000/posts/write-a-new-post/</id>
-    <content src="http://localhost:4000/posts/write-a-new-post/" />
+    <id>http://localhost:4000/posts/OSINT-DORK/</id>
+    <content src="http://localhost:4000/posts/OSINT-DORK/" />
     <author>
-      <name>cotes</name>
+      <name>inaciot</name>
     </author>
 
   
     
-    <category term="Blogging" />
+    <category term="Projetos" />
     
-    <category term="Tutorial" />
+    <category term="OSINT-DORK" />
     
   
 
@@ -192,11 +145,101 @@ Prepare a square image (PNG, JPG, or SVG) with a size of 512x512 or more, and th
 
 
 
-      This tutorial will guide you how to write a post in the Chirpy template, and it’s worth reading even if you’ve used Jekyll before, as many features require specific variables to be set.
+      Tive a oportunidade de ministrar uma palestra no evento BSIDES 2022 sobre Técnicas de OSINT aplicadas ao Pentest, aproveitando a oportunidade, apresentei o OSINT-DORK, um projeto simples com coleções de dorks para facilitar a realização de DORKS pelo google, github e shodan.
 
-Naming and Path
+OSINT-DORK
 
-Create a new file named YYYY-MM-DD-TITLE.EXTENSION and put it in the _posts of the root directory. Please note that the EXTENSION must be one of md and markdown. If you want to save time of cre...
+
+
+Projeto baseado no 
+
+Shodan-Dork
+
+Github-Dork (Mr.Koanti)
+
+Google dorks (faisalahmed)
+
+
+    </summary>
+  
+
+  </entry>
+
+  
+  <entry>
+    <title>Writeup Spring -UHCLABS</title>
+    <link href="http://localhost:4000/posts/Writeup-Spring-UHCLABS/" rel="alternate" type="text/html" title="Writeup Spring -UHCLABS" />
+    <published>2022-07-21T00:00:00-03:00</published>
+  
+    <updated>2022-07-21T00:00:00-03:00</updated>
+  
+    <id>http://localhost:4000/posts/Writeup-Spring-UHCLABS/</id>
+    <content src="http://localhost:4000/posts/Writeup-Spring-UHCLABS/" />
+    <author>
+      <name>José Inácio</name>
+    </author>
+
+  
+    
+    <category term="Writeup" />
+    
+    <category term="UHCLABS" />
+    
+  
+
+  
+    <summary>
+      
+
+
+
+
+
+      Inicialmente foi realizada uma varredura de portas para o IP, em busca de serviços com versões expostas e que contenham vulnerabilidades publicas.
+
+
+
+Vendo as portas 80,8080 abertas, e foi realizado o acesso a ambas, e possível ver um site para porta 80, e uma mensagem de erro 404 na porta 8080
+
+
+
+O erro nos indica se tratar de um Spring boot, então buscamos realizar uma forca bruta de arquivos...
+    </summary>
+  
+
+  </entry>
+
+  
+  <entry>
+    <title>Threat hunting</title>
+    <link href="http://localhost:4000/posts/Threat-hunting/" rel="alternate" type="text/html" title="Threat hunting" />
+    <published>2022-04-26T00:00:00-03:00</published>
+  
+    <updated>2023-02-08T17:51:25-03:00</updated>
+  
+    <id>http://localhost:4000/posts/Threat-hunting/</id>
+    <content src="http://localhost:4000/posts/Threat-hunting/" />
+    <author>
+      <name>José Inácio</name>
+    </author>
+
+  
+    
+    <category term="Papers" />
+    
+    <category term="Threat hunting" />
+    
+  
+
+  
+    <summary>
+      
+
+
+
+
+
+      Sabemos que o monitoramento desempenha um papel crucial na detecção e análise atividades maliciosas em um sistema. Com isso, resolvi criar esse laboratório para estudo pessoal com o intuito de monitorar e detectar logs de eventos, relacionados a atividades maliciosas usando o ELK Stack, usando o winlogbeat como ferramenta de envio de logs e configurando Sysmon para ajudar a identificar atividad...
     </summary>
   
 

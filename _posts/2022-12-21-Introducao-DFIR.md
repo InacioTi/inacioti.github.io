@@ -2,7 +2,7 @@
 title: Introducao ao DFIR
 author: José Inácio
 date: 2022-12-21
-categories: [Papers, Tutorial]
+categories: [Papers, Introducao ao DFIR]
 tags: [DFIR]
 pin: true
 ---
@@ -39,98 +39,98 @@ A perícia digital pode incluir:
 
 Além de ajudar as equipes a responder a ataques, a perícia digital desempenha um papel importante em todo o processo de correção, podendo auxiliar a desenvolver e fortalecer medidas preventivas de segurança, isso permite que a organização reduza o risco geral e acelere os tempos de resposta futuros.
 
-Dito isso, abaixo segue algumas ferramentas retiradas originalmente da coleção disponibilizada pelo Meirwah<https://github.com/meirwah/awesome-incident-response>.
+Dito isso, abaixo segue algumas ferramentas retiradas originalmente da coleção disponibilizada pelo [Meirwah](https://github.com/meirwah/awesome-incident-response).
 
 Ferramentas para simulação adversária;
 
-- APTSimulator<https://github.com/NextronSystems/APTSimulator>
-- Caldera
-- Red Team Automation (RTA) — O RTA
+- [APTSimulator](https://github.com/NextronSystems/APTSimulator)
+- [Caldera](https://github.com/mitre/caldera)
+- [Red Team Automation (RTA) — O RTA](https://github.com/endgameinc/RTA)
 
 Ferramenta de criação de imagem de disco;
 
-- AccessData FTK Imager
-- Bitscout — Bitscout
-- GetData Forensic Imager
-- Guymager
+- [AccessData FTK Imager](http://accessdata.com/product-download/?/support/adownloads#FTKImager)
+- [Bitscout — Bitscout](https://github.com/vitaly-kamluk/bitscout)
+- [GetData Forensic Imager](http://www.forensicimager.com/)
+- [Guymager](http://guymager.sourceforge.net/)
 
 Ferramentas de análise de log;
 
-- APT Hunter — APT-Hunter
-- Event Log Explorer
-- Observador de Log de Eventos
-- Kaspersky CyberTrace
-- LogonTracer
-- WELA
+- [APT Hunter — APT-Hunter](https://github.com/ahmedkhlief/APT-Hunter)
+- [Event Log Explorer](https://eventlogxp.com/)
+- [Observador de Log de Eventos](https://lizard-labs.com/event_log_observer.aspx)
+- [Kaspersky CyberTrace](https://support.kaspersky.com/13850)
+- [LogonTracer](https://github.com/JPCERTCC/LogonTracer)
+- [WELA](https://github.com/Yamato-Security/WELA)
 
 Ferramentas de análise de memória;
 
-- AVML
-- Evolve
-- inVtero.net
-- LiME
-- Memoryze
+- [AVML](https://github.com/microsoft/avml)
+- [Evolve](https://github.com/JamesHabben/evolve)
+- [inVtero.net](https://github.com/ShaneK2/inVtero.net)
+- [LiME](https://github.com/504ensicsLabs/LiME)
+- [Memoryze](https://www.fireeye.com/services/freeware/memoryze.html)
 
 Coleta de evidências;
 
-- bulk_extractor
-- CyLR
-- UAC — UAC
-- DFIR ORC — DFIR ORC
-- Fibratus
-- Hoarder
+- [bulk_extractor](https://github.com/simsong/bulk_extractor)
+- [CyLR](https://github.com/orlikoski/CyLR)
+- [UAC — UAC](https://github.com/tclahr/uac)
+- [DFIR ORC — DFIR ORC](https://dfir-orc.github.io/)
+- [Fibratus](https://github.com/rabbitstack/fibratus)
+- [Hoarder](https://github.com/muteb/Hoarder)
 
 Gerenciamento de incidentes;
 
-- Catalyst
-- CORTEX XSOAR
-- Resposta Rápida a Incidentes (FIR)
-- RTIR
+- [Catalyst](https://github.com/SecurityBrewery/catalyst)
+- [CORTEX XSOAR](https://www.paloaltonetworks.com/cortex/xsoar)
+- [Resposta Rápida a Incidentes (FIR)](https://github.com/certsocietegenerale/FIR/)
+- [RTIR](https://www.bestpractical.com/rtir/)
 
 Ferramenta Sandbox/Reverse;
 
-- AMAaaS
-- Any Run
-- CAPEv2
-- Cuckoo
-- Ghidra
-- Virustotal
+- [AMAaaS](https://amaaas.com/index.php/AMAaaS/dashboard)
+- [Any Run](https://app.any.run/)
+- [CAPEv2](https://github.com/kevoreilly/CAPEv2)
+- [Cuckoo](https://github.com/cuckoosandbox/cuckoo)
+- [Ghidra](https://github.com/NationalSecurityAgency/ghidra)
+- [Virustotal](https://www.virustotal.com/)
 
 Ferramentas “all-in-one”;
 
-- GRR Rapid Response
-- IRIS — IRIS
-- Sleuth Kit & Autopsy
-- TheHive / Cortex
-- Velociraptor
-- X-Ways Forensics
-- Diffy
-- Digital Survey and Analysis Appliance (ADIA) — Dispositivo
-- Computer Aided Investigative Environment (CAINE)
-- Security Onion .
-- HELK
-- RedHunt-OS
+- [GRR Rapid Response](https://github.com/google/grr)
+- [IRIS — IRIS](https://github.com/dfir-iris/iris-web)
+- [Sleuth Kit & Autopsy](http://www.sleuthkit.org/)
+- [TheHive / Cortex](https://thehive-project.org/)
+- [Velociraptor](https://github.com/Velocidex/velociraptor)
+- [X-Ways Forensics](http://www.x-ways.net/forensics/)
+- [Diffy](https://github.com/Netflix-Skunkworks/diffy)
+- [Digital Survey and Analysis Appliance (ADIA) — Dispositivo](https://forensics.cert.org/#ADIA)
+- [Computer Aided Investigative Environment (CAINE)](http://www.caine-live.net/index.html)
+- [Security Onion .](https://github.com/Security-Onion-Solutions/security-onion)
+- [HELK](https://github.com/Cyb3rWard0g/HELK)
+- [RedHunt-OS](https://github.com/redhuntlabs/RedHunt-OS)
 
 PLaybook;
 
-- GuardSIght Playbook Battle Cards
-- IRM
-- ThreatHunter-Playbook
+- [GuardSIght Playbook Battle Cards](https://github.com/guardsight/gsvsoc_cirt-playbook-battle-cards)
+- [IRM](https://github.com/certsocietegenerale/IRM)
+- [ThreatHunter-Playbook](https://github.com/OTRF/ThreatHunter-Playbook)
 
 Bases de conhecimentos (Livros,videos,comunidade);
 
-- Resposta Aplicada a Incidentes — Livro de Steve Anson.
-- Arte da Forense da Memória — Detectando Malware e Ameaças na Memória do Windows, Linux e Mac.
-- Elaboração do Manual InfoSec: Plano Diretor de Monitoramento de Segurança e Resposta a Incidentes — Por Jeff Bollinger, Brandon Enright e Matthew Valites.
-- Forense Digital e Resposta a Incidentes: Técnicas e procedimentos de resposta a incidentes para responder a ameaças cibernéticas modernas — Por Gerard Johansen.
-- Introdução ao DFIR — Por Scott J. Roberts.
-- Técnicas de Resposta a Incidentes para Ataques de Ransomware — Por Oleg Skulkin.
-- Resposta a Incidentes Orientada por Inteligência — Por Scott J. Roberts, Rebekah Brown.
-- Practical Memory Forensics — Por Svetlana Ostrovskaya e Oleg Skulkin.
-- Incidente Response Overview — Conjunto de materiais sobre o assunto, disponibilizado pelo Joas A Santos.
-- Digital Forensics Discord Server — Comunidade de mais de 8.000 profissionais.
-- DFIR — Base de Conhecimento.
-- Base de Conhecimento de Artefatos Forenses Digitais
-- O Futuro da Resposta a Incidentes — Apresentado por Bruce Schneier na OWASP AppSecUSA 2015.
+- [Resposta Aplicada a Incidentes — Livro de Steve Anson.](https://www.amazon.com/Applied-Incident-Response-Steve-Anson/dp/1119560268/)
+- [Arte da Forense da Memória — Detectando Malware e Ameaças na Memória do Windows, Linux e Mac.](https://www.amazon.com/Art-Memory-Forensics-Detecting-Malware/dp/1118825098/)
+- [Elaboração do Manual InfoSec: Plano Diretor de Monitoramento de Segurança e Resposta a Incidentes — Por Jeff Bollinger, Brandon Enright e Matthew Valites.](https://www.amazon.com/Crafting-InfoSec-Playbook-Security-Monitoring/dp/1491949406)
+- [Forense Digital e Resposta a Incidentes: Técnicas e procedimentos de resposta a incidentes para responder a ameaças cibernéticas modernas — Por Gerard Johansen.](https://www.amazon.com/Digital-Forensics-Incident-Response-techniques/dp/183864900X)
+- [Introdução ao DFIR — Por Scott J. Roberts.](https://medium.com/@sroberts/introduction-to-dfir-d35d5de4c180/)
+- [Técnicas de Resposta a Incidentes para Ataques de Ransomware — Por Oleg Skulkin.](https://www.amazon.com/Incident-Response-Techniques-Ransomware-Attacks/dp/180324044X)
+- [Resposta a Incidentes Orientada por Inteligência — Por Scott J. Roberts, Rebekah Brown.](https://www.amazon.com/Intelligence-Driven-Incident-Response-Outwitting-Adversary-ebook-dp-B074ZRN5T7/dp/B074ZRN5T7)
+- [Practical Memory Forensics — Por Svetlana Ostrovskaya e Oleg Skulkin.](https://www.amazon.com/Practical-Memory-Forensics-Jumpstart-effective/dp/1801070334)
+- [Incidente Response Overview — Conjunto de materiais sobre o assunto, disponibilizado pelo Joas A Santos.](https://drive.google.com/file/d/1vxVYbIDkSGa3kuHd_bIN6J1dyqdBIJo-/view?usp=share_link)
+- [Digital Forensics Discord Server — Comunidade de mais de 8.000 profissionais.](https://discordapp.com/invite/JUqe9Ek)
+- [DFIR — Base de Conhecimento.](https://dfir.com.br/)
+- [Base de Conhecimento de Artefatos Forenses Digitais](https://github.com/ForensicArtifacts/artifacts-kb)
+- [O Futuro da Resposta a Incidentes — Apresentado por Bruce Schneier na OWASP AppSecUSA 2015.](https://www.youtube.com/watch?v=bDcx4UNpKNc)
 
 
