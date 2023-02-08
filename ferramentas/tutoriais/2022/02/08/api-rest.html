@@ -1,0 +1,317 @@
+<p>Esta API, faz parte do curso de Python ministrado por mim no <strong>Hacker Space</strong> <a href="https://becodoexploit.com">Beco do exploit</a>.</p>
+
+<p>O intuito de desenvolver uma API, faz parte do <code class="language-plaintext highlighter-rouge">mindset</code> de que “se você sabe construir, também sabe desconstruir”. Além de que, o conhecimento do desenvolvimento de APIs, soma com a habilidade de construir ferramentas para o dia-a-dia de uma exploração.</p>
+
+<p>A idéia não é despejar todo o código pronto, mas mostrar passo a passo como é a linha de pensamento ao criar uma API, ao final, deixarei o projeto disponível no <code class="language-plaintext highlighter-rouge">Github</code>.</p>
+
+<h1 id="o-que-você-vai-precisar">O que você vai precisar:</h1>
+
+<ul>
+  <li>Conhecer um pouco de métodos <a href="https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Methods">HTTP</a>;</li>
+  <li>Conhecer banco de dados;</li>
+  <li>Conhecer o basico de Python;</li>
+  <li>Algum editor de código fonte de sua preferência (vou usar o VSCode);</li>
+  <li>Alguma plataforma para testar a API de sua preferência (vou usar o Postman).</li>
+</ul>
+
+<h2 id="iniciando-o-projeto">Iniciando o projeto</h2>
+
+<p>A princípio, precisamos criar nosso projeto em algum diretório, pois, para fins de organização do código, vamos montar toda a estrutura de diretórios que irá conter nossas bibliotecas e arquivos.</p>
+
+<center><img src="/img/posts/api-01.png" /></center>
+
+<p>Dentro do diretório do projeto, vamos criar uma pasta chamada <code class="language-plaintext highlighter-rouge">api</code>, pois é onde trabalharemos os códigos. Dentro da pasta api, vamos criar a pasta <code class="language-plaintext highlighter-rouge">app</code>.</p>
+
+<center><img src="/img/posts/api-02.png" /></center>
+
+<h2 id="codando">Codando</h2>
+
+<p>Com a estrutura inicial pronta, vamos começar a codar. Algumas pessoas costumam criar uma <code class="language-plaintext highlighter-rouge">venv</code> para instalar pacotes, a fim de não “sujar” a instalação principal do python, no meu caso vou carregar a biblioteca na instalação principal com o comando <code class="language-plaintext highlighter-rouge">pip install flask</code> (porém, desde já recomendo fortemente utilizar um ambiente virtual).</p>
+
+<p>Após instalado, vamos criar um arquivo chamado <code class="language-plaintext highlighter-rouge">__init__.py</code> dentro do diretório <code class="language-plaintext highlighter-rouge">app</code>. Este arquivo vai conter nossa instancia inicial da API.</p>
+
+<center><img src="/img/posts/api-03.png" /></center>
+
+<p>Somente com este script, é possível iniciar nosso servidor da API, porém, como vamos fazer um projeto <code class="language-plaintext highlighter-rouge">organizado</code> e de simples manutenção, vamos criar um script chamado <code class="language-plaintext highlighter-rouge">run.py</code> dentro do diretório <code class="language-plaintext highlighter-rouge">api</code>, que é a raiz do nosso projeto.</p>
+
+<p>Este script irá conter as variáveis para iniciarmos o servidor.</p>
+
+<center><img src="/img/posts/api-04.png" /></center>
+
+<p>Note que colocamos as variáveis de inicialização dentro do arquivo <code class="language-plaintext highlighter-rouge">run.py</code>, logo, ela deve ser retirada do script <code class="language-plaintext highlighter-rouge">__init__.py</code>.</p>
+
+<p>Ainda no diretório raiz, vamos criar o arquivo <code class="language-plaintext highlighter-rouge">config.py</code> que irá conter todas as nossas configurações da API, a princípio, este arquivo deve conter somente a linha <code class="language-plaintext highlighter-rouge">DEBUG = True</code> isso permitirá que o servidor reconheça as alterações realizadas e reinicie automaticamente a cada alteração no código que fizermos.</p>
+
+<p>Agora precisamos voltar ao nosso arquivo <code class="language-plaintext highlighter-rouge">__init__.py</code> e passar as configurações, ficando desta forma:</p>
+
+<center><img src="/img/posts/api-05.png" /></center>
+
+<p>Com estas atualizações, nossa API irá carregar todas as nossas configurações deste arquivo.</p>
+
+<h2 id="criando-rotas">Criando rotas</h2>
+
+<p>Nossa API precisa de rotas para carregar, atualizar, e alterar os dados, pra isso precisamos criar rotas. O microframework Flask, nos permite criar rotas de forma muito fácil.</p>
+
+<p>Para isso, vamos criar um diretório dentro da pasta <code class="language-plaintext highlighter-rouge">app</code> chamado <code class="language-plaintext highlighter-rouge">routes</code>, e dentro dele criar o arquivo <code class="language-plaintext highlighter-rouge">routes.py</code> que ficará desta forma:</p>
+
+<center><img src="/img/posts/api-06.png" /></center>
+
+<p>Agora precisamos importar as rotas em nosso arquivo <code class="language-plaintext highlighter-rouge">__init__.py</code> desta forma:</p>
+
+<center><img src="/img/posts/api-07.png" /></center>
+
+<p>Agora, podemos executar nosso script <code class="language-plaintext highlighter-rouge">run.py</code>, ele vai iniciar o servidor no localhost na porta 5000 (esta porta também pode ser alterada).</p>
+
+<p>Precisamos de uma plataforma para testar a API, no meu caso vou utilizar o <code class="language-plaintext highlighter-rouge">Postman</code>. Ao fazer uma requisição via <code class="language-plaintext highlighter-rouge">GET</code> no endereço <code class="language-plaintext highlighter-rouge">http://127.0.0.1:5000</code> temos o retorno da API com nosso <code class="language-plaintext highlighter-rouge">Hello World!</code>.</p>
+
+<center><img src="/img/posts/api-08.png" /></center>
+
+<h2 id="conexão-com-banco-de-dados">Conexão com banco de dados</h2>
+
+<p>A conexão com banco de dados pode ser feito com qualquer <code class="language-plaintext highlighter-rouge">SGBD</code>, nesta API do tutorial vou utilizar <code class="language-plaintext highlighter-rouge">sqlite3</code>, porém vou deixar uma configuração comentada caso queira utilizar <code class="language-plaintext highlighter-rouge">MySQL</code>.</p>
+
+<p>Para dar continuidade, algumas bibliotecas precisam ser instaladas, são elas:</p>
+
+<ul>
+  <li>flask_marshmallow;</li>
+  <li>marshmallow_sqlalchemy;</li>
+  <li>marshmallow;</li>
+  <li>Flask-SQLAlchemy;</li>
+  <li>mysqlclient;</li>
+</ul>
+
+<p>Todas elas podem ser instaladas com <code class="language-plaintext highlighter-rouge">pip</code>.</p>
+
+<p>Agora precisamos atualizar nosso <code class="language-plaintext highlighter-rouge">config.py</code> com as variáveis de conexão, ficando desta forma:</p>
+
+<center><img src="/img/posts/api-09.png" /></center>
+
+<p>Agora precisamos atualizar nosso <code class="language-plaintext highlighter-rouge">__init__.py</code> criando uma instância do SQLAlchemy que fará todas as iterações com o banco de dados e uma instância Marshmallow que facilitará nossa vida convertendo consultas no banco de dados no formato <code class="language-plaintext highlighter-rouge">JSON</code>. Ficando desta forma:</p>
+
+<center><img src="/img/posts/api-10.png" /></center>
+
+<p>Neste momento, podemos ver nossa API tomando forma.</p>
+
+<h2 id="criando-o-model">Criando o model</h2>
+
+<p>Neste momento, vamos criar nosso primeiro <code class="language-plaintext highlighter-rouge">model</code> que será de usuários, para isto, vamos criar um diretório chamado <code class="language-plaintext highlighter-rouge">models</code> dentro do diretório <code class="language-plaintext highlighter-rouge">app</code> e dentro dele o arquivo <code class="language-plaintext highlighter-rouge">users.py</code>.</p>
+
+<p>Dentro deste arquivo, precisamos importar as instâncias do SQLAlchemy e Marshmallow que criamos em nosso <code class="language-plaintext highlighter-rouge">__init__.py</code>. Após isto, podemos criar uma classe que irá conter nossas configurações do database, ficando desta forma:</p>
+
+<center><img src="/img/posts/api-11.png" /></center>
+
+<blockquote>
+  <p>Conforme observado, criamos a instância no “__init__.py” com a variável “db” contendo o SQLAlchemy. Com ela podemos configurar o database de forma muito fácil com Flask passando argumentos para as configurar as colunas da tabela.</p>
+</blockquote>
+
+<p>Com o model criado, podemos utilizar o Marshmallow para serializar nossas consultas e facilitar o retorno no formato <code class="language-plaintext highlighter-rouge">JSON</code>. Dentro do meusmo arquivo <code class="language-plaintext highlighter-rouge">users.py</code>, podemos adicionar a seguinte classe:</p>
+
+<center><img src="/img/posts/api-12.png" /></center>
+
+<blockquote>
+  <p>Por padrão os schemas do Marshmallow não precisam de uma base com uma classe, porém como estamos utilizando o SQLAlchemy, precisamos utilizar a class Meta, que vai utilizar os campos da classe criada anteriormente. Também criamos duas variáveis que serão utilizadas para retornar o JSON, sendo que o parâmetro many, informa que será retornado uma array.</p>
+</blockquote>
+
+<p>Com nosso <code class="language-plaintext highlighter-rouge">users.py</code> criado, precisamos referenciá-lo em nosso arquivo <code class="language-plaintext highlighter-rouge">__init__.py</code> desta forma:</p>
+
+<center><img src="/img/posts/api-13.png" /></center>
+
+<p>Com o model criado, precisamos navegar com o <code class="language-plaintext highlighter-rouge">SHELL</code> (<code class="language-plaintext highlighter-rouge">CMD</code> se você estiver no Windows) até o diretório <code class="language-plaintext highlighter-rouge">api</code> que é a raiz do nosso projeto e rodar os seguintes comandos:</p>
+
+<center><img src="/img/posts/api-14.png" /></center>
+
+<p>Como estou utilizando <code class="language-plaintext highlighter-rouge">sqlite3</code>, já é possível ver o database criado nos diretórios do projeto.</p>
+
+<center><img src="/img/posts/api-15.png" /></center>
+
+<p>Caso estaja utilizando <code class="language-plaintext highlighter-rouge">MySQL</code>, verá que a tabela de usuários foi criada.</p>
+
+<h2 id="operações-de-crud">Operações de CRUD</h2>
+
+<p>Neste ponto nossa API já tem vários diretórios e pode parecer um emaranhado de scripts, porém as coisas farão um pouco mais de sentido agora, montando nosso primeiro <code class="language-plaintext highlighter-rouge">CRUD</code>.</p>
+
+<p>Antes de mais nada, vamos criar uma pasta <code class="language-plaintext highlighter-rouge">views</code> dentro da pasta <code class="language-plaintext highlighter-rouge">app</code> para montarmos toda a lógica e conexão com o banco de dados. Dentro desta pasta, vamos criar um novo arquivo <code class="language-plaintext highlighter-rouge">users.py</code> (sim, temos dois scripts com o mesmo nome, porém em diretórios diferentes) para realizar as operações.</p>
+
+<p>Neste script, precisamos importar o banco de dados do nosso app, nosso model e algumas funçõs da biblioteca Flask. As ferramentas devem ficar parecido com isso:</p>
+
+<center><img src="/img/posts/api-16.png" /></center>
+
+<p>A primeira função que criaremos em nosso CRUD, será a de adicionar um usuário, como estamos trabalhando com requisições no formato JSON, vamos utilizar o objeto <code class="language-plaintext highlighter-rouge">request</code> que importamos da biblioteca <code class="language-plaintext highlighter-rouge">flask</code>, este objeto possui vários atributos que podem ser aprendidos através da própria biblioteca do <a href="https://flask.palletsprojects.com/en/2.0.x/quickstart/">Flask</a>. A função fica desta forma:</p>
+
+<center><img src="/img/posts/api-17.png" /></center>
+<blockquote>
+  <p>Note que utilizamos a biblioteca “werkzeug.security” para criar uma hash com a senha do usuário, pois em situação nenhuma devemos gravar senhas em texto claro em banco de dados. Em seguida, criamos um objeto “user” que contém todas as variáveis que criamos.</p>
+</blockquote>
+
+<p>Agora precisamos inserir as informações recebidas no banco de dados, para organizar bem a API, vamos inserir numa estrutura <em>try/except</em> para que a API retorne uma mensagem diferente caso ocorra algum erro no insert. Vamos utilizar a variável <code class="language-plaintext highlighter-rouge">db</code> que importamos do app. Ficando desta forma:</p>
+
+<center><img src="/img/posts/api-18.png" /></center>
+
+<p>Nesta função, utilizamos uma sessão do nosso banco de dados para registrar um usuário e logo em seguida retornamos estes dados no formato JSON. Para isto utilizamos nosso objeto <code class="language-plaintext highlighter-rouge">user_schema</code> que utiliza o Marshmallow que transforma nossa Instância de Users em JSON.</p>
+
+<p>Para que este script esteja disponível em nossa API, precisamos criar uma rota para ela, portanto precisamos incluí-la em nosso <code class="language-plaintext highlighter-rouge">routes.py</code> utilizando o método <code class="language-plaintext highlighter-rouge">POST</code>. A nova rota fica desta maneira:</p>
+
+<center><img src="/img/posts/api-19.png" /></center>
+
+<p>Com o script atualizado, podemos criar uma requisição via <code class="language-plaintext highlighter-rouge">POST</code>com o Postman para testar o CRUD. A requisição deve conter os dados no formato JSON conforme abaixo:</p>
+
+<center><img src="/img/posts/api-20.png" /></center>
+
+<p>Ao enviar a requisição <code class="language-plaintext highlighter-rouge">POST</code> temos a resposta:</p>
+
+<center><img src="/img/posts/api-21.png" /></center>
+
+<p>E nossa primeira função do CRUD funcionou com sucesso!!!</p>
+
+<p>Agora podemos seguir com o upgrade de nossa API com uma função que atualizará os dados do usuário. Para issom, vamos continuar editando o script <code class="language-plaintext highlighter-rouge">users.py</code> na pasta <code class="language-plaintext highlighter-rouge">views</code> acicionando uma nova função conforme abaixo:</p>
+
+<center><img src="/img/posts/api-22.png" /></center>
+
+<blockquote>
+  <p>Aqui criamos um objeto “user” que recebe o parâmetro “id”, pois a requisição receberá o id do usuário e consultará no banco de dados. Caso este usuário exista, as informações passadas na requisição serão atualizadas em banco, mas caso não exista o id informado, uma mensagem deve ser passada ao usuário.</p>
+</blockquote>
+
+<p>Agora precisamos criar uma rota para este update de usuários em um novo <code class="language-plaintext highlighter-rouge">endpoint</code> lá em nosso script <code class="language-plaintext highlighter-rouge">routes.py</code> desta forma:</p>
+
+<center><img src="/img/posts/api-23.png" /></center>
+<blockquote>
+  <p>Note que após o endpoint “/users” existe o parâmetro “/<id>". Isso significa que a API vai capturar o que vier após o /users/ como um parâmetro e usá-lo na função.</id></p>
+</blockquote>
+
+<p>Agora podemos testá-lo no Postman alterando os dados do primeiro usuário que criamos:</p>
+
+<center><img src="/img/posts/api-24.png" /></center>
+
+<p>E temos o retorno da requisição com os dados de email alterados:</p>
+
+<center><img src="/img/posts/api-25.png" /></center>
+
+<p>Agora vamos criar uma função para listar todos os usuários cadastrados em banco, ficando desta forma:</p>
+
+<center><img src="/img/posts/api-26.png" /></center>
+<blockquote>
+  <p>Note que para chamar um usuário pelo id, foi utilizada a função “Users.query.get(id)” , pois o .get() procura por um campo, já para listar tosos os usuários, utilizamos “Users.query.all()”, pos o .all() captura toda a tabela.</p>
+</blockquote>
+
+<p>Agora precisamos adicionar uma rota para esta consulta, desta forma:</p>
+
+<center><img src="/img/posts/api-27.png" /></center>
+
+<p>Antes de testar a requisição, adicionei mais 2 usuários para o resultado ficar melhor. Ao requisitar esta rota, temos a seguinte resposta:</p>
+
+<center><img src="/img/posts/api-28.png" /></center>
+
+<p>Tudo irganizado e respondendo como esperado!</p>
+
+<p>Agora que listamos <code class="language-plaintext highlighter-rouge">todos</code> os usuários, vamos montar uma função que retorna somente um usuário através do <code class="language-plaintext highlighter-rouge">id</code>. Para isto vamos criar mais uma função em nosso <code class="language-plaintext highlighter-rouge">users.py</code> desta forma:</p>
+
+<center><img src="/img/posts/api-29.png" /></center>
+
+<p>E como já fizemos com outras funções, vamos adicionar uma rota:</p>
+
+<center><img src="/img/posts/api-30.png" /></center>
+
+<p>E vamos testá-lo:</p>
+
+<center><img src="/img/posts/api-31.png" /></center>
+
+<p>Com isso nosso CRUD está quase pronto, faltando somente uma função para remover um usuário, para isso, vamos utilizar o método HTTP <code class="language-plaintext highlighter-rouge">DELETE</code>.</p>
+
+<p>Esta função será bem parecida com a função update, porém vamos utilizar o <code class="language-plaintext highlighter-rouge">delete</code>, desta forma:</p>
+
+<center><img src="/img/posts/api-32.png" /></center>
+
+<p>E como de costume, vamos criar a seguinte rota:</p>
+
+<center><img src="/img/posts/api-33.png" /></center>
+
+<p>Agora podemos testar no Postman, deletando um dos usuários:</p>
+
+<center><img src="/img/posts/api-34.png" /></center>
+
+<p>E isso finaliza todo o CRUD de usuários da nossa API. O próximo passo é fazer a autenticação via token.</p>
+
+<h1 id="json-tokens">JSON Tokens</h1>
+
+<p>Até o momento, nossa API já tem um método de autenticação, porém todos os métodos estão liberados, precisamos fornecer um modelo de segurança no qual somente um usuário autenticado na API consiga efetuar consultas e alterações.</p>
+
+<p>Para isso, vamos utilizar a biblioteca <code class="language-plaintext highlighter-rouge">PyJWT</code> que pode ser instalada com o comando <code class="language-plaintext highlighter-rouge">pip install PyJWT</code> e sua documentação pode ser encontrada <a href="https://pyjwt.readthedocs.io/en/stable/">aqui</a>.</p>
+
+<p>O token vai consistir numa hash criptografada contendo o username e uma <code class="language-plaintext highlighter-rouge">chave secreta</code> randômica gerada pela API.</p>
+
+<p>A primeira parte, é criar essa chave secreta, vamos para nosso arquivo <code class="language-plaintext highlighter-rouge">config.py</code> para gerar esta hash, o arquivo ficará desta forma:</p>
+
+<center><img src="/img/posts/api-35.png" /></center>
+<blockquote>
+  <p>Note que a variável chave_randomica recebe vários atributos da biblioteca string que ainda não recebe nenhum valor, mas quando juntamos esta variável com a função choice da biblioteca random, temos uma sequência totalmente aleatória através de um loop de 12, que será o tamanho da string gerada.</p>
+</blockquote>
+
+<p>Agora podemos criar uma função em nosso arquivo <code class="language-plaintext highlighter-rouge">users.py</code> que vai nos ajudar a fazer uma query no banco através do username, a função fica desta forma:</p>
+
+<center><img src="/img/posts/api-36.png" /></center>
+
+<p>Agora podemos criar um novo script dentro da pasta <code class="language-plaintext highlighter-rouge">views</code> que fará a autenticação, vamos chamá-lo de <code class="language-plaintext highlighter-rouge">authenticator.py</code>. Nele vamos importar o nosso <code class="language-plaintext highlighter-rouge">jwt</code>, e mais algumas bibliotecas para criarmos <a href="https://www.datacamp.com/community/tutorials/decorators-python?utm_source=adwords_ppc&amp;utm_medium=cpc&amp;utm_campaignid=14989519638&amp;utm_adgroupid=127836677279&amp;utm_device=c&amp;utm_keyword=&amp;utm_matchtype=b&amp;utm_network=g&amp;utm_adpostion=&amp;utm_creative=332602034364&amp;utm_targetid=aud-299261629574:dsa-429603003980&amp;utm_loc_interest_ms=&amp;utm_loc_physical_ms=1001772&amp;gclid=Cj0KCQiAsqOMBhDFARIsAFBTN3cEH3fQEs4VV3T6w1NbHOhVkNHsKuAzQCSMyjU-psZ3f4EvAhkI0-oaAjbOEALw_wcB">decorators</a> que seráo utilizados em nosso script. A princípio, as importações ficam desta forma:</p>
+
+<center><img src="/img/posts/api-37.png" /></center>
+
+<p>Vamos começar criando a função <code class="language-plaintext highlighter-rouge">auth</code> que será utilizada para autenticar o usuário e gerar o token criptografado, nesta função, iremos criar uma variável que receberá o header com <code class="language-plaintext highlighter-rouge">basic authorization</code>, desta forma:</p>
+
+<center><img src="/img/posts/api-38.png" /></center>
+
+<p>Neste ponto, já fizemos uma validação básico do usuário, mas ainda é preciso validar o usuário no banco de dados.</p>
+
+<p>Para isto, vamos utilizar a ultima funcã́o que criamos no arquivo <code class="language-plaintext highlighter-rouge">users.py</code>, desta forma:</p>
+
+<center><img src="/img/posts/api-39.png" /></center>
+
+<p>Até o momento, já validamos se o usuário existe no banco, mas também é preciso validar se a senha está correta, porém, a senha gravada em banco está criptografada, para comparar a senha informada com a que está gravada em banco, é preciso criptografar o que vem no request para fazer a comparação e gerar o token se tudo estiver ok. Uma vez que tudo foi validado, podemos gerar o token criptografado com um tempo de expiração, sendo a chave de criptografia, nossa <code class="language-plaintext highlighter-rouge">SECRET_KEY</code>. O script fica desta forma:</p>
+
+<center><img src="/img/posts/api-40.png" /></center>
+
+<p>Agora é preciso criar um endpoint para autenticação, vamos criar a rota em nosso <code class="language-plaintext highlighter-rouge">routes.py</code>:</p>
+
+<center><img src="/img/posts/api-41.png" /></center>
+<blockquote>
+  <p>Não se esqueça de importar o arquivo authenticator no routes.py</p>
+</blockquote>
+
+<p>Agora precisamos testar, para isso, vamos fazer a requisição <code class="language-plaintext highlighter-rouge">POST</code> para o endpoint, passando as credenciais no <code class="language-plaintext highlighter-rouge">Basic authorization</code> do Postman, se os dados de usuário e senha foram passados corretamente, esta é a resposta:</p>
+
+<center><img src="/img/posts/api-42.png" /></center>
+
+<p>Caso uma senha, ou usuário inválidos foram passados, teremos esta resposta:</p>
+
+<center><img src="/img/posts/api-43.png" /></center>
+
+<p>Neste momento, está quase tudo pronto, porém, precisamos fazer com que nossos endpoints entendam que uma autenticação é necessária para que possam operar. Para isso vamos criar a função <code class="language-plaintext highlighter-rouge">token_required</code> que utilizará <a href="https://docs.python.org/pt-br/3/library/functools.html">wraps</a> da biblioteca <code class="language-plaintext highlighter-rouge">functools</code>que importamos. Ficando inicialmente assim:</p>
+
+<center><img src="/img/posts/api-44.png" /></center>
+
+<p>Com isso, validamos se um token foi enviado no request, mas ainda precisamos validar se este token é valido. Para isso, nossa API precisa decodificar este token e verificar se a <code class="language-plaintext highlighter-rouge">SECRET_KEY</code> é valida. Uma vez que o token foi validado vamos criar uma variável que fará uma pesquisa no banco de dados a partir da função <code class="language-plaintext highlighter-rouge">user_by_userneme</code> que criamos no arquivo <code class="language-plaintext highlighter-rouge">users.py</code> da pasta <code class="language-plaintext highlighter-rouge">views</code> e iremos retornar este usuário nos argumentos do <code class="language-plaintext highlighter-rouge">decorator</code>. Ficando desta forma:</p>
+
+<center><img src="/img/posts/api-45.png" /></center>
+
+<p>Com a função pronta, precisamos atualizar nossa rota para exigir o token, vamos testar com a primeira rota que criamos utilizando o <code class="language-plaintext highlighter-rouge">decorator</code> desta forma:</p>
+
+<center><img src="/img/posts/api-46.png" /></center>
+
+<p>Agora é a hora da verdade onde testaremos nossa autenticação, primeiro vamos fazer uma requisição sem nenhum token:</p>
+
+<center><img src="/img/posts/api-47.png" /></center>
+
+<p>Ótimo, a API já identificou que é necessário um token para operar. Agora vamos fazer uma requisição com um token inválido:</p>
+
+<center><img src="/img/posts/api-48.png" /></center>
+
+<p>Excelente, a API já reconheceu que o token é inválido. Agora vamos gerar um token no endpoint <code class="language-plaintext highlighter-rouge">/auth</code> e passar este token na requisição:</p>
+
+<center><img src="/img/posts/api-49.png" /></center>
+
+<p>E a API funcionou perfeitamente!!! Agora podemos passar o <code class="language-plaintext highlighter-rouge">decorator</code> em qualquer endpoint que desejarmos.</p>
+
+<p>Isso finaliza toda a construção da API com autenticação. A partir daí, mais funcionalidades e consultas ao banco de dados podem ser efetuadas para dar sentido à API.</p>
+
+<p>Conforme prometido, o projeto completo está disponível no <a href="https://github.com/h41stur/beco.py">GitHub</a>.</p>
+
+<p>Espero que o artigo e a ferramenta tenham sido úteis para os seus estudos, até a próxima!!!</p>
+

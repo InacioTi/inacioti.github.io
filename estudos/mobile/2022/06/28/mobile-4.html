@@ -1,0 +1,330 @@
+<p><img src="/img/posts/android-logo.png" alt="Pentesting Android" title="Pentesting Android" /></p>
+
+<ul>
+  <li><a href="#introdução">INTRODUÇÃO</a></li>
+  <li><a href="#análise-estática-x-dinâmica">ANÁLISE ESTÁTICA x DINÂMICA</a></li>
+  <li><a href="#código-smali">CÓDIGO SMALI</a></li>
+  <li><a href="#técnicas-de-engenharia-reversa">TÉCNICAS DE ENGENHARIA REVERSA</a>
+    <ul>
+      <li><a href="#unzip-e-backsmali">Unzip e Backsmali</a></li>
+      <li><a href="#apktool">Apktool</a></li>
+      <li><a href="#assinando-um-apk">Assinando um APK</a>
+        <ul>
+          <li><a href="#keystore">KeyStore</a></li>
+          <li><a href="#jarsigner">JarSigner</a></li>
+          <li><a href="#zipalign">ZipAlign</a></li>
+        </ul>
+      </li>
+      <li><a href="#jadx-gui">Jadx-gui</a></li>
+      <li><a href="#dex2jar">Dex2jar</a></li>
+      <li><a href="#enjarify">Enjarify</a></li>
+      <li><a href="#mobile-security-framework-mobsf">Mobile Security Framework (MobSF)</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="introdução">INTRODUÇÃO</h1>
+
+<p>Dando continuidade aos artigos sobre pentesting mobile, vamos discorrer sobre <code class="language-plaintext highlighter-rouge">engenharia reversa de aplicativos</code>. Existem infinitas formas de fazer engenharia reversa de um aplicativo, nenhuma delas é a mais correta ou definitiva, para cada caso, uma das formas funcionará melhor tendo como princípio a necessidade.</p>
+
+<p>A engenharia reversa é uma fase importante em um teste, não só pela possibilidade de ver o código fonte da aplicação, mas pela possibilidade de alterar seu código e conseguir efetuar o bypass de proteções. Além de fornecer entendimento de como e onde a aplicação armazena dados, como é sua comunicação com o backend e vazar possíveis endereços como URLs e IPs.</p>
+
+<h1 id="análise-estática-x-dinâmica">ANÁLISE ESTÁTICA x DINÂMICA</h1>
+
+<p>Existem basicamente duas frentes no que diz respeito a a engenharia reversa de aplicativos, a <code class="language-plaintext highlighter-rouge">análise estática</code> e a <code class="language-plaintext highlighter-rouge">análise dinâmica</code>.</p>
+
+<p>Na análise estática, a aplicação é analisada sem a necessidade de estar em execução, como um <code class="language-plaintext highlighter-rouge">code-review</code> analisando o manifest, as bibliotecas e a decompilação dos arquivos <code class="language-plaintext highlighter-rouge">.dex</code>.</p>
+
+<p>Na análise dinâmica, a aplicação é analisada durante sua execução, medindo e enumerando seus comportamentos e fluxos. São utilizadas técnicas de debugging, trace de chamadas de API e syscalls, análise de variáveis em tempo de execução, entre outros.</p>
+
+<p>É importante salientar, que qualquer uma das técnicas usadas individualmente se torna incompleta, uma vez que são complementares.</p>
+
+<h1 id="código-smali">CÓDIGO SMALI</h1>
+
+<p>O <code class="language-plaintext highlighter-rouge">código smali</code> é o mais baixo nível de um aplicativo Android. Quando um aplicativo é desenvolvido em Java, uma linguagem de alto nível, este código precisa ser compilado de um apk de forma que a máquina virtual de Dalvik consiga o interpretar.</p>
+
+<p>Este processo de compilação gera os códigos em baixo nível para ser interpretados pela máquina. A este código em baixo nível chamamos de smali.</p>
+
+<p>O código abaixo, mostra um exemplo de smali que imprime um “Hello World!”.</p>
+
+<pre><code class="language-smali">class public h41stur;
+.super Ljava/lang/Object;
+
+.method public static main([Ljava/lang/String;)V
+    .registers 2
+    sget-object v0,         Ljava/lang/System;-&gt;out:Ljava/io/PrintStream;
+    const-string            v1, "Hello World!"
+    invoke-virtual{v0,v1}, Ljava/io/PrintStream;-&gt;println(Ljava/lang/String;)V
+    return-void
+.end method
+</code></pre>
+<p>Para entendermos o processo que chegou a este código smali, podemos criar o script em Java e compilá-lo de forma a se tornar um arquivo <code class="language-plaintext highlighter-rouge">.dex</code> que possa ser executado por uma máquina de Dalvik.</p>
+
+<p>O código abaixo, mostra a classe Java correspondente ao “Hello World”.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">h41stur</span><span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">){</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello World!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Para que este código seja interpretado pelo binário <code class="language-plaintext highlighter-rouge">java</code> precisamos compilá-lo com o <code class="language-plaintext highlighter-rouge">javac</code>.</p>
+
+<p><img src="/img/posts/mobile-21.png" alt="Classe compilada" title="Classe compilada" /></p>
+
+<p>Como podemos ver, após compilar a classe, com o javac, um arquivo “h41stur.class” foi criado, a prtir disto, foi possível executar o script com o java imprimindo a mensagem.</p>
+
+<p>Neste ponto, a classe java está compilada e executável pelo java em uma máquina Linux, porém, o sistema operacional Android não interpreta Java, conforme já vimos, e sim smali. Para que possamos gerar o código em baixo nível para o Android interpretar, podemos utilizar a ferramenta <code class="language-plaintext highlighter-rouge">d8</code> que faz parte do <code class="language-plaintext highlighter-rouge">build-tools</code> do <code class="language-plaintext highlighter-rouge">Android Studio</code>.</p>
+
+<p>Esta ferramenta compila o bytecode Java para o bytecode DEX que pode ser executado pelo Android.</p>
+
+<p><img src="/img/posts/mobile-22.png" alt="Compilando Java em DEX" title="Compilando Java em DEX" /></p>
+
+<p>Ao compilar o arquivo .class com o d8, temos como resultado o arquivo “classes.dex” que contém o bytecode interpretável pela máquina de Dalvik.</p>
+
+<p>Para coomprovarmos a eficácia, podemos transferir o arquivo .dex gerado para um dispositivo atraǘes do comando <code class="language-plaintext highlighter-rouge">adb push</code> e executá-lo dentro do Android com o comando <code class="language-plaintext highlighter-rouge">dalvikvm -cp classes.dex h41stur</code>, onde:</p>
+
+<ul>
+  <li><strong>dalvikvm</strong>: é a máquina virtual Dalvik, responsável por interpretar os arquivos .dex;</li>
+  <li><strong>-cp classes.dex</strong>: é o “class path” ou o caminho onde está armazenada a classe;</li>
+  <li><strong>h41stur</strong>:  é o nome da classe criada para ser interpretada.</li>
+</ul>
+
+<p>A imagem abaixo mostra o resultado da execução.</p>
+
+<p><img src="/img/posts/mobile-23.png" alt="Execução do DEX" title="Execução do DEX" /></p>
+
+<h1 id="técnicas-de-engenharia-reversa">TÉCNICAS DE ENGENHARIA REVERSA</h1>
+
+<p>A partir deste momento, podemos começar a “desmontar” um aplicativo de várias formas. Como teste, vaos utilizar o aplicativo <a href="https://hakin9.org/evabs-extremely-vulnerable-android-labs/">EVABS (Extremaly Vulnerable Android Labs)</a>.</p>
+
+<h2 id="unzip-e-backsmali">Unzip e Backsmali</h2>
+
+<p>Todo aplicativo nada mais é que um pacote compactado de arquivos e bibliotecas. Sendo assim, é possível descompactá-lo com o próprio <code class="language-plaintext highlighter-rouge">unzip</code>.</p>
+
+<p>Descompactando desta forma, não se tem o aplicatívo de forma legível para análise, mas é possível utilizar outras ferramentas para auxiliar em sua análise.</p>
+
+<p><img src="/img/posts/mobile-24.png" alt="Descompactando o APK" title="Descompactando o APK" /></p>
+
+<p>Após descompactar o APK, podemos ver que alguns arquivos e diretórios são exibidos, conforme mostrado na imagem abaixo.</p>
+
+<p><img src="/img/posts/mobile-25.png" alt="APK descompactado" title="APK descompactado" /></p>
+
+<p>Estes diretórios e arquivos contém todos os recursos do aplicativo, incluindo imagens, códigos, bibliotecas, incluindo o arquivo `classes.dex”, porém todos os arquivos estão em bytecode e ilegíveis para nós.</p>
+
+<p>Para fazermos o reversing do arquivo classes.dex, podemos utilizar a ferramenta <a href="https://github.com/JesusFreke/smali">backsmali</a>, bastando passar argumendo de <code class="language-plaintext highlighter-rouge">disassembly</code> e o path do arquivo .dex e um output conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-26.png" alt="Disassembly do .dex" title="Disassembly do .dex" /></p>
+
+<p>Conforme podemos ver, o diretório “reversing” foi criado, pois foi o nome passado para o output.</p>
+
+<p>Se caminharmos para o diretório raiz do aplicativo, podemos ver todos os scripts smali, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-27.png" alt="Arquivos smali" title="Arquivos smali" /></p>
+
+<p>E ao abrirmos qualquer um destes arquivos, teremos o código smali legível para interpretação e edição.</p>
+
+<p><img src="/img/posts/mobile-28.png" alt="Código smali" title="Código smali" /></p>
+
+<p>Muitas vezes, somente de observar o código smali, é possível determinar comportamentos importantes sobre a aplicação, credenciais hardcoded e diversas outras informações.</p>
+
+<p>Como por exemplo no arquivo <code class="language-plaintext highlighter-rouge">DBLeak.smali</code> na linha 63, podemos ver a criação de uma tabela de usuários, e logo abaixo o insert de usuários e senhas, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-29.png" alt="Credenciais hardcoded" title="Credenciais hardcoded" /></p>
+
+<p>Para melhor entendimento sobre os operadores Dalvik, segue uma excelente <a href="http://pallergabor.uw.hu/androidblog/dalvik_opcodes.html">referência</a>.</p>
+
+<p>Após a analise do aplicativo, caso alguma alteração tenha sido feita em um arquivo smali, é possível compilá-los novamente para empacotar em um APK novamente, para isso, basta apagar o arquivo <code class="language-plaintext highlighter-rouge">classes.dex</code> original, e utilizar a ferramenta <a href="https://github.com/JesusFreke/smali">smali</a> para compilar o diretório gerado pelo backsmali.</p>
+
+<p><img src="/img/posts/mobile-30.png" alt="Processo de recompilação dos arquivos smali" title="Processo de recompilação dos arquivos smali" /></p>
+
+<p>Após a compilação dos arquivos smali, é possível compactar os arquivos e diretórios novamente em formato de APK com a ferramenta <code class="language-plaintext highlighter-rouge">zip</code> conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-31.png" alt="Compactando o aplicativo" title="Compactando o aplicativo" /></p>
+
+<p>E um novo aplicativo foi gerado, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-32.png" alt="Aplicativo gerado" title="Aplicativo gerado" /></p>
+
+<p>É importante ressaltar, que o aplicativo recompactado ainda não está pronto para ser instalado, pois como vimos em posts anteriores, um aplicativo precisa estar <code class="language-plaintext highlighter-rouge">assinado</code> para que o Android o reconheça como válido, mais a frente iremos explorar a assinatura de um APK.</p>
+
+<h2 id="apktool">Apktool</h2>
+
+<p>Como já vimos a decompilação de um aplicativo de forma manual, podemos utilizar uma ferramenta automatizada que agiliza o processo.</p>
+
+<p>O <a href="https://ibotpeaches.github.io/Apktool/">apktool</a> é uma junção de várias ferramentas em um set que executa comandos de forma sequencial para descompactar e decompilar e/ou compilar e compactar um aplicativo.</p>
+
+<p><img src="/img/posts/mobile-33.png" alt="Apktool" title="Apktool" /></p>
+
+<p>Conforme podemos ver, o <code class="language-plaintext highlighter-rouge">apktool</code> já conta até mesmo com o smali e backsmali em seu kit.</p>
+
+<p>A imagem abaixo mostra o processo de decompilação de um aplicativo.</p>
+
+<p><img src="/img/posts/mobile-34.png" alt="Decompilando o APK" title="Decompilando o APK" /></p>
+
+<p>E assim como da forma manual, todos os arquivos smali estão disponíveis para leitura e edição, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-35.png" alt="Arquivos smali" title="Arquivos smali" /></p>
+
+<p>O processo de recompilação é tão simples quanto o anterior, bastando utilizar o parâmetro <code class="language-plaintext highlighter-rouge">b</code> (build) para o apktool.</p>
+
+<p><img src="/img/posts/mobile-36.png" alt="Recompilando o APK" title="Recompilando o APK" /></p>
+
+<p>Assim como da forma manual, é importante ressaltar, que o aplicativo recompactado ainda não está pronto para ser instalado, pois como vimos em posts anteriores, um aplicativo precisa estar <code class="language-plaintext highlighter-rouge">assinado</code> para que o Android o reconheça como válido, mais a frente iremos explorar a assinatura de um APK.</p>
+
+<h2 id="assinando-um-apk">Assinando um APK</h2>
+
+<p>Até o momento vimos uma forma de descompactar e decompilar um aplicativo para que seja possível obter seu código smali e alterá-lo, caso possível, assim como recompilá-lo e compactálo para gerar um novo APK adulterado.</p>
+
+<p>Porém, este processo remove a assinatura original do aplicativo, e como vimos em posts anteriores, o Android só reconhece um aplicativo como válido, caso este esteja assinado com um certificado.</p>
+
+<p>Para fins de teste de um aplicativo, é possível assinar o APK adulterado com um certificado auto assinado. É importante salientar, que um aplicativo assinado desta forma, não é reconhecido pela loja oficial, portanto, não é possível subir um APK auto assinado na loja oficial</p>
+
+<p>O processo para tal, envolve uma série de passos e ferramentas. Não existe uma única forma de assinar um aplicativo, portanto uma delas será explorada no decorrer do post.</p>
+
+<h3 id="keystore">KeyStore</h3>
+
+<p>O primeiro passo no processo de assinatura é a criação de uma <code class="language-plaintext highlighter-rouge">KeyStore</code>. O KeyStore, como o próprio nome sugere, é um arquivo que serve como um “banco de dados” que contém informações criptografadas e informações de como criptografar. Em resumo é uma área de armazenamento de chaves.</p>
+
+<p>O processo de criação do KeyStore já envolve também a criação de um par de chaves. A própria suite <code class="language-plaintext highlighter-rouge">ADB</code> contém a ferramenta <code class="language-plaintext highlighter-rouge">keytool</code> que tem como função a administração de certificados. Abaixo o comando para criação de uma KeyStore:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>keytool <span class="nt">-genkey</span> <span class="nt">-v</span> <span class="nt">-keystore</span> h41stur.keystore <span class="nt">-alias</span> h41stur <span class="nt">-keyalg</span> RSA <span class="nt">-keysize</span> 2048 <span class="nt">-validity</span> 10000
+</code></pre></div></div>
+<p>Onde:</p>
+
+<ul>
+  <li><strong>-genkey</strong>: é o argumento para gerar um par de chaves;</li>
+  <li><strong>-v</strong>: argumento para aumentar a verbosidade;</li>
+  <li><strong>-keystore</strong>: é o argumento para indicar o nome da KeyStore a ser gerada;</li>
+  <li><strong>-alias</strong>: é o argumento para dar um alias para o certificado;</li>
+  <li><strong>-keyalg</strong>: é o argumento para indicar qual algorítmo de criptografia será usado para o certificado;</li>
+  <li><strong>-keysize</strong>: é o argumento para passar o tamanho da chave em bits;</li>
+  <li><strong>-validity</strong>: é o argumento para informar a validade em dias do certificado.</li>
+</ul>
+
+<p>Após executar o comando, a ferramenta vai pedir uma senha para o certificado e mais algumas informações (que não tem tanta importância numcertificado auto assinado para testes), e gerará o KeyStore com o nome indicado, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-37.png" alt="Gerando a KeyStore" title="Gerando a KeyStore" /></p>
+
+<p>É possível listar as chaves armazenadas na KeyStore com o argumento <code class="language-plaintext highlighter-rouge">-list</code> conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-38.png" alt="Listando as chaves" title="Listando as chaves" /></p>
+
+<p>Caso seja necessário, também é possível extrair os certificados armazenados na KeyStore, bastando indicá-la juntamente com o alias do certificado, com o comando abaixo.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>keytool <span class="nt">-export</span> <span class="nt">-rfc</span> <span class="nt">-keystore</span> h41stur.keystore <span class="nt">-alias</span> h41stur <span class="nt">-file</span> h41stur.cer
+</code></pre></div></div>
+<p>Onde:</p>
+
+<ul>
+  <li><strong>-export</strong>: é o argumento para exportar um certificado;</li>
+  <li><strong>-rfc</strong>: é o argumento para indicar que a saída será no formato RFC;</li>
+  <li><strong>-keystore</strong>: é o argumento para passar o caminho para a KeyStore;</li>
+  <li><strong>-alias</strong>: é o argumento para passar o alias do certificado a ser extraído de dentro da KeyStore;</li>
+  <li><strong>-file</strong>: é o argumento para informar o arquivo de saída do certificado exportado.</li>
+</ul>
+
+<p>Ao executar o comando, a senha do certificado será solicitada e o arquivo será gerado, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-39.png" alt="Certificado extraído" title="Certificado extraído" /></p>
+
+<p><img src="/img/posts/mobile-40.png" alt="Certificado extraído" title="Certificado extraído" /></p>
+
+<h3 id="jarsigner">JarSigner</h3>
+
+<p>Com a KeyStore e o par de chaves criados, é possível assinar o aplicativo adulterado com a ferramenta <code class="language-plaintext highlighter-rouge">jarsigner</code> existente na <code class="language-plaintext highlighter-rouge">build-tools</code> do <code class="language-plaintext highlighter-rouge">Android Studio</code>. O comando abaixo mostra o processo de assinatura.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jarsigner <span class="nt">-sigalg</span> SHA1withRSA <span class="nt">-digestalg</span> SHA1 <span class="nt">-keystore</span> h41stur.keystore EVABSv4_rebuild.apk h41stur
+</code></pre></div></div>
+<p>Onde:</p>
+
+<ul>
+  <li><strong>-sigalg</strong>: é o argumento para informar o algorítmo utilizado na assinatura;</li>
+  <li><strong>-digestalg</strong>: é o argumento para informar o algorítmo utilizado na compilação do certificado;</li>
+  <li><strong>-keystore</strong>: é o argumento para informar o caminho da KeyStore;</li>
+</ul>
+
+<p>Estes argumentos devem ser seguidos do caminho do APK a ser assinado e do alias do certificado.</p>
+
+<p>Ao executar o comando, a senha do certificado será solicitada e o aplicativo será assinado com o certificado, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-41.png" alt="Assinando o APK" title="Assinando o APK" /></p>
+
+<p>É possível verificar a assinatura do APK com o argumento <code class="language-plaintext highlighter-rouge">-verify</code> conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-42.png" alt="Verificando assinatura" title="Verificando assinatura" /></p>
+
+<p>Após este processo, o aplicativo ainda não está pronto, ainda é necessário fazer o alinhamento do arquivo compactado.</p>
+
+<h3 id="zipalign">ZipAlign</h3>
+
+<p>O <code class="language-plaintext highlighter-rouge">zipalign</code> é uma ferramenta que pode ser encontrada na <code class="language-plaintext highlighter-rouge">build-tools</code> do <code class="language-plaintext highlighter-rouge">Android Studio</code>. De acordo com sua <a href="https://developer.android.com/studio/command-line/zipalign">documentação</a>, esta ferramenta certifica que todos os arquivos descompactados no arquivo sejam alinhados em relação ao seu início, permitindo que todos estes arquivos possam ser acessados via <a href="https://man7.org/linux/man-pages/man2/mmap.2.html">mmap</a>, eliminando a necessidade de copiar esses dados na RAM e reduzindo o uso de memória do seu aplicativo.</p>
+
+<p>O comando abaixo mostra o processo de alinhamento do arquivo.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>zipalign <span class="nt">-v</span> 4 EVABSv4_rebuild.apk EVABSv4_alinhado.apk
+</code></pre></div></div>
+<p>Onde:</p>
+
+<ul>
+  <li><strong>-v</strong>: é o argumento para aumentar a verbosidade;</li>
+  <li><strong>4</strong>: é o argumento para informar o alinhamento em bytes, no caso o <code class="language-plaintext highlighter-rouge">4</code> informa um alinhamento em <code class="language-plaintext highlighter-rouge">32 bits</code>.</li>
+</ul>
+
+<p>Após este processo, o aplicativo adulterado está pronto para ser instalado em um dispositivo físico ou emulado.</p>
+
+<h2 id="jadx-gui">Jadx-gui</h2>
+
+<p>Nem sempre a engenharia reversa precisa seguir até o nível mais baixo de código e bibliotecas, em uma situação de code review, a cenversão para o código fonte Java se torna suficiente para entendimento do aplicativo.</p>
+
+<p>O <a href="https://github.com/skylot/jadx">jadx-gui</a> é um set de ferramentas de linha de comando e GUI que produzo códigos Java a partir de APKs e Android Dex.</p>
+
+<p>Seu uso é simples, bastando chamar a ferramenta seguida do path do aplicativo a ser decompilado. A impagem abaixo mostra o aplicativo <a href="https://hakin9.org/evabs-extremely-vulnerable-android-labs/">EVABS (Extremaly Vulnerable Android Labs)</a> decompilado.</p>
+
+<p><img src="/img/posts/mobile-43.png" alt="APK decompilado" title="APK decompilado" /></p>
+
+<p>A partir desta fase, é possível fazer buscas no aplicativo por termos e funções chave.</p>
+
+<p>É importante ressaltar, que na própria página da ferramenta, é explícito que sua eficácia não é de 100%, pois alguns pontos do aplicativo podem não ser decompilados.</p>
+
+<h2 id="dex2jar">Dex2jar</h2>
+
+<p>O <a href="https://github.com/pxb1988/dex2jar">dex2jar</a> faz parte de uma suite de ferramentas que tem pod objetivo trabalhar com extensões <code class="language-plaintext highlighter-rouge">.dex</code> os convertendo em classes Java.</p>
+
+<p>Específicamente o <code class="language-plaintext highlighter-rouge">dex2jar</code> converte um aplicativo ou um código DEX em classes Java compactadas em um único arquivo <code class="language-plaintext highlighter-rouge">.jar</code> servindo com uma alternativa na decompilação de um aplicativo, uma vez que o resultado possa não ser 100% satisfatório entre uma ferramenta e outra.</p>
+
+<p>Sua síntaxe é simples, bastando invocar a ferramenta seguida do path do aplicativo, após o processo, um arquivo com o sufixo <code class="language-plaintext highlighter-rouge">-dex2jar.jar</code> é gerado, conforme mostrado abaixo.</p>
+
+<p><img src="/img/posts/mobile-44.png" alt="APK decompilado" title="APK decompilado" /></p>
+
+<p>Para leitura do arquivo gerado é preciso utilizar uma aplicação que leia as classes Java, nestes artigos, usaremos o <a href="http://java-decompiler.github.io/">jd-gui</a>, uma ferramenta do <code class="language-plaintext highlighter-rouge">Java Decompiler project</code> que tem por objetivo desenvolver ferramentas para decompilar e analisar o Java byte-code.</p>
+
+<p>Para efetuar a leitura, basta invocar o jd-gui seguido do path da classe gerada com o dex2jar. A imagem abaixo mostra como a leitura fica visível.</p>
+
+<p><img src="/img/posts/mobile-45.png" alt="jd-gui" title="jd-gui" /></p>
+
+<h2 id="enjarify">Enjarify</h2>
+
+<p>O <a href="https://github.com/Storyyeller/enjarify">enjarify</a> assim como o dex2jar, é uma ferramenta para tradizid arquivos .dex e APKs em código Java, escritp em <code class="language-plaintext highlighter-rouge">Python</code> serve como mais uma alternativa para decompilação de aplicativos.</p>
+
+<p>Sua sintaxe também é simples, bastando invocá-lo seguido do path do arquivo .dex ou APK. A imagem abaixo mostra este processo.</p>
+
+<p><img src="/img/posts/mobile-46.png" alt="APK decompilado" title="APK decompilado" /></p>
+
+<p>Ao final do processo, o enjarify também gera as classes Javas compactadas em um arquivo .jar, que pode ser aberto com o jd-gui.</p>
+
+<h2 id="mobile-security-framework-mobsf">Mobile Security Framework (MobSF)</h2>
+
+<p>O <a href="https://github.com/MobSF/Mobile-Security-Framework-MobSF">Mobile Security Framework (MobSF)</a> é uma ferramenta “all-in-one” que faz todos os processos descritos neste post, desde a decompilação a code review. Além de permitir a análise tanto estática quanto dinâmica de um aplicativo.</p>
+
+<p>Assim como as demais ferramentas, pode não trazer 100% de acerto, porém sua interface amigável e detalhada facilita a interpretação.</p>
+
+<p>O demonstrativo abaixo, retirado do próprio GitHub <a href="https://github.com/MobSF/Mobile-Security-Framework-MobSF" title="MobSF">MobSF</a> mostra o processo de engenharia reversa.</p>
+
+<p><img src="https://user-images.githubusercontent.com/4301109/95506503-f9b6c980-097d-11eb-803a-f88321e1feb7.gif" alt="MobSF" title="MobSF" /></p>
+
+<h1 id="conclusão">CONCLUSÃO</h1>
+
+<p>Neste artigo, foi possível obter um overview do processo de engenharia reversa e adulteração de um aplicativo Android, foram vistas várias técnicas que podem se complementar, uma vez que nenhuma delas pode ser elencada como a definitiva.<br />
+Nos próximos posts, entenderemos o processo de <code class="language-plaintext highlighter-rouge">hooking</code> de um aplicativo.</p>

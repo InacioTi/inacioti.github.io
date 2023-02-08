@@ -1,0 +1,399 @@
+<p><img src="/img/posts/Pasted%20image%2020230106122723.png" alt="E-mail Spoofing" /></p>
+
+<ul>
+  <li><a href="#introdução">Introdução</a></li>
+  <li><a href="#e-mail-spoofing"><em>E-mail Spoofing</em></a>
+    <ul>
+      <li><a href="#impacto-técnico-do-e-mail-spoofing">Impacto técnico do <em>e-mail spoofing</em></a></li>
+      <li><a href="#impacto-de-negócio-do-e-mail-spoofing">Impacto de negócio do <em>e-mail spoofing</em></a></li>
+    </ul>
+  </li>
+  <li><a href="#spf">SPF</a>
+    <ul>
+      <li><a href="#tipos-de-spf">Tipos de SPF</a></li>
+      <li><a href="#atributos-do-spf">Atributos do SPF</a></li>
+    </ul>
+  </li>
+  <li><a href="#dkim">DKIM</a></li>
+  <li><a href="#dmarc">DMARC</a></li>
+  <li><a href="#como-um-servidor-de-e-mails-interpreta-todas-estas-regras">Como um servidor de e-mails interpreta todas estas regras</a>
+    <ul>
+      <li><a href="#ordem-de-verificação-de-protocolos">Ordem de verificação de protocolos</a></li>
+    </ul>
+  </li>
+  <li><a href="#como-são-feitos-ataques-de-e-mail-spoofing">Como são feitos ataques de <em>e-mail spoofing</em></a></li>
+  <li><a href="#encontrando-possíveis-vulnerabilidades-de-e-mail-spoofing">Encontrando possíveis vulnerabilidades de <em>e-mail spoofing</em></a>
+    <ul>
+      <li><a href="#spf-com--all-hard-fail">SPF com -all (<em>hard fail</em>)</a></li>
+      <li><a href="#spf-com-all-soft-fail">SPF com ~all (<em>soft fail</em>)</a></li>
+      <li><a href="#spf-com-all-neutral">SPF com ?all (<em>neutral</em>)</a></li>
+      <li><a href="#outras-configurações-que-podem-levar-ao-e-mail-spoofing">Outras configurações que podem levar ao <em>e-mail spoofing</em></a></li>
+      <li><a href="#automatizando-a-enumeração-das-configurações">Automatizando a enumeração das configurações</a></li>
+    </ul>
+  </li>
+  <li><a href="#boas-práticas-para-dificultar-o-e-mail-spoofing">Boas práticas para dificultar o <em>e-mail spoofing</em></a></li>
+  <li><a href="#conclusão">Conclusão</a></li>
+  <li><a href="#referências">Referências</a></li>
+</ul>
+
+<h2 id="introdução">Introdução</h2>
+
+<p>Imagine explorar uma vulnerabilidade que, aparentemente, dentro do seu escopo de conhecimento, não seria possível de explorar, e como consequência, não saber muito bem o que foi feito.</p>
+
+<p>Pois bem, assim como toda base de conhecimento parte da ignorância, este estudo surgiu de uma situação parecida, onde, em minha singela falta de conhecimento mais profundo, consegui falsificar um e-mail, mesmo pensando que não seria possível. Então surgiu a dúvida: como eu fiz isso?</p>
+
+<p>E na busca da resposta, muita coisa foi aprendida sobre protocolos e configurações que tentarei deixar da forma mais detalhada no decorrer deste artigo.</p>
+
+<p>Como de costume, gosto de deixar um bom embasamento antes de falar sobre vias de fato, portanto, partimos do princípio, entendendo os tópicos base para o assunto.</p>
+
+<h2 id="e-mail-spoofing"><em>E-mail Spoofing</em></h2>
+
+<p>O <em>e-mail spoofing</em>, ou falsificação de <em>e-mail</em>, é a prática de enviar um <em>e-mail</em> com o endereço de remetente falsificado. Isso pode ser feito de várias maneiras, mas a intenção geral é fazer com que o <em>e-mail</em> pareça ter sido enviado por alguém diferente do remetente real e com um nível aparente de autenticidade elevado.</p>
+
+<p>Um dos métodos mais comuns de <em>e-mail spoofing</em> é a alteração do campo “<em>From</em>” de um <em>e-mail</em>. Quando você recebe um <em>e-mail</em>, o endereço no campo “<em>From</em>” é o endereço que o remetente quer que você acredite que enviou o <em>e-mail</em>. No entanto, esse endereço pode facilmente ser alterado para que pareça que foi enviado por outra pessoa.</p>
+
+<p>Outra maneira de fazer <em>e-mail spoofing</em> é alterando o endereço IP do remetente. O endereço IP é um número único atribuído a cada dispositivo que se conecta à internet. Quando um <em>e-mail</em> é enviado, o servidor de <em>e-mail</em> do remetente inclui o endereço IP do remetente no cabeçalho do <em>e-mail</em>. Se um remetente alterar o seu endereço IP para fazer com que pareça que o <em>e-mail</em> foi enviado de outro lugar, isso pode ser considerado <em>e-mail spoofing</em>.</p>
+
+<p>O objetivo do <em>e-mail spoofing</em> geralmente é induzir o destinatário a acreditar que o <em>e-mail</em> é legítimo e realizar alguma ação, como clicar em um link, baixar um anexo ou divulgar informações confidenciais.</p>
+
+<p>Além do impacto financeiro direto, as empresas vítimas de <em>e-mail spoofing</em> também podem enfrentar custos indiretos, como tempo e recursos necessários para investigar e remediar o ataque, bem como possíveis consequências legais e regulatórias.</p>
+
+<h3 id="impacto-técnico-do-e-mail-spoofing">Impacto técnico do <em>e-mail spoofing</em></h3>
+
+<p>O impacto técnico da falsificação de <em>e-mail</em> pode ser significativo, pois permite que os invasores ganhem a confiança do destinatário e possam induzi-lo a divulgar informações confidenciais, como senhas ou informações financeiras. Ele também pode ser usado para espalhar <em>malware</em> ou ataques de <em>phishing</em> para um público mais amplo, pois os <em>e-mails</em> fraudulentos podem ser mais propensos a serem abertos e clicados pelo destinatário devido à percepção de autenticidade do remetente.</p>
+
+<p>Além disso, a falsificação de <em>e-mail</em> pode ser usada para contornar os filtros de <em>spam</em> e enviar <em>e-mails</em> maliciosos diretamente para a caixa de entrada do destinatário, pois os filtros podem não detectar a natureza fraudulenta do <em>e-mail</em>. Isso pode permitir que os invasores ignorem as medidas de segurança e obtenham acesso a sistemas ou dados confidenciais.</p>
+
+<h3 id="impacto-de-negócio-do-e-mail-spoofing">Impacto de negócio do <em>e-mail spoofing</em></h3>
+
+<p>Esse tipo de ataque pode ter impactos de negócio significativos, incluindo:</p>
+
+<ol>
+  <li>
+    <p><strong>Perda de informações confidenciais</strong>: se um funcionário for vítima de um <em>e-mail</em> falsificado e clicar em um link ou anexo malicioso, isso poderá resultar na perda de informações confidenciais da empresa, como dados financeiros ou registros de clientes.</p>
+  </li>
+  <li>
+    <p><strong>Danos à reputação</strong>: Se um <em>e-mail</em> falsificado for enviado a clientes ou parceiros, isso poderá prejudicar a reputação da empresa. Os clientes podem perder a confiança na empresa e parar de fazer negócios com ela, enquanto os parceiros podem se recusar a trabalhar com uma empresa que foi vítima de um ataque cibernético.</p>
+  </li>
+  <li>
+    <p><strong>Perda financeira</strong>: em alguns casos, <em>e-mails</em> falsificados podem ser usados ​​para induzir os funcionários a transferir dinheiro para o invasor. Isso pode resultar em perdas financeiras significativas para a empresa.</p>
+  </li>
+  <li>
+    <p><strong>Consequências legais</strong>: Se uma empresa sofrer uma violação de dados como resultado de um ataque de <em>e-mail spoofing</em>, poderá enfrentar consequências legais, incluindo multas e penalidades.</p>
+  </li>
+</ol>
+
+<p>Nesta altura acredito que o ataque de <em>e-mail spoofing</em> ficou claro assim como sua criticidade em um cenário corporativo e pessoal.</p>
+
+<h2 id="spf">SPF</h2>
+
+<p>SPF (<em>Sender Policy Framework</em>) é um mecanismo de autenticação de <em>e-mail</em> usado para ajudar a proteger os destinatários de <em>e-mails</em> falsificados ou “<em>spoofed mails</em>”. Ele permite que os administradores de domínio especifiquem quais servidores de <em>e-mail</em> são autorizados a enviar <em>e-mails</em> em nome de um domínio específico.</p>
+
+<p>Quando um servidor de <em>e-mail</em> recebe um <em>e-mail</em>, ele verifica o registro SPF do domínio do remetente para ver se o servidor que enviou o <em>e-mail</em> está na lista de servidores autorizados. Se o servidor enviou o <em>e-mail</em> não estiver na lista, o <em>e-mail</em> pode ser marcado como <em>spam</em> ou rejeitado completamente.</p>
+
+<p>O SPF é um mecanismo eficaz para ajudar a proteger os destinatários de <em>e-mails</em> falsificados, pois permite que os administradores de domínio especifiquem quais servidores são autorizados a enviar <em>e-mails</em> em nome de seu domínio. No entanto, é importante lembrar que o SPF sozinho não é uma solução completa para a prevenção de <em>e-mail spoofing</em> e deve ser usado em conjunto com outras medidas de segurança, como o <strong>DMARC</strong> (<em>Domain-based Message Authentication, Reporting and Conformance</em>).</p>
+
+<h3 id="tipos-de-spf">Tipos de SPF</h3>
+
+<p>Existem dois tipos principais de SPF: o <strong>SPF básico</strong> e o <strong>SPF estendido</strong>.</p>
+
+<p>O <strong>SPF básico</strong> é o tipo mais simples de SPF e permite que os administradores de domínio especifiquem uma lista de servidores de <em>e-mail</em> autorizados a enviar <em>e-mails</em> em nome de seu domínio. Essa lista é incluída em um registro TXT no DNS (<em>Domain Name System</em>) do domínio.</p>
+
+<p>O <strong>SPF estendido</strong> é uma versão mais avançada do SPF que permite aos administradores de domínio especificar uma lista mais detalhada de servidores de <em>e-mail</em> autorizados a enviar <em>e-mails</em> em nome de seu domínio. Ele também permite aos administradores especificar ações a serem tomadas quando um <em>e-mail</em> é enviado por um servidor não autorizado. As ações podem incluir marcar o <em>e-mail</em> como <em>spam</em> ou rejeitá-lo completamente.</p>
+
+<h3 id="atributos-do-spf">Atributos do SPF</h3>
+
+<p>Existem vários atributos que podem ser incluídos em um registro SPF para especificar quais servidores são autorizados a enviar <em>e-mails</em> em nome de um domínio. Alguns dos principais atributos incluem:</p>
+
+<ul>
+  <li><strong>ip4</strong>: Especifica um endereço IP IPv4 autorizado a enviar <em>e-mails</em> em nome do domínio.</li>
+  <li><strong>ip6</strong>: Especifica um endereço IP IPv6 autorizado a enviar <em>e-mails</em> em nome do domínio.</li>
+  <li><strong>a</strong>: Especifica um nome de host autorizado a enviar <em>e-mails</em> em nome do domínio.</li>
+  <li><strong>mx</strong>: Especifica um servidor de <em>e-mail</em> autorizado a enviar <em>e-mails</em> em nome do domínio.</li>
+  <li><strong>include</strong>: Permite que um domínio inclua outro domínio em sua política SPF. Geralmente utilizado se um domínio tiver vários servidores de <em>e-mail</em> que enviam <em>e-mails</em> em seu nome.</li>
+  <li>
+    <p><strong>all</strong>: O atributo <strong>all</strong> é usado no registro SPF para especificar a ação a ser tomada quando um <em>e-mail</em> é enviado por um servidor não autorizado. Existem quatro opções principais para o atributo <strong>all</strong>:</p>
+
+    <ol>
+      <li><strong>-all (<em>hard fail</em>)</strong>: Marca o e-mail como spam. Isso é usado quando o remetente quer que todos os <em>e-mails</em> enviados por servidores de e-mail não autorizados sejam marcados como spam.</li>
+      <li><strong>~all (<em>soft fail</em>)</strong>: Marca o <em>e-mail</em> como <em>spam</em> com probabilidade baixa. Isso é usado quando o remetente quer permitir que alguns <em>e-mails</em> enviados por servidores de <em>e-mail</em> não autorizados sejam entregues, mas quer que a maioria seja marcada como <em>spam</em>.</li>
+      <li><strong>+all (<em>pass</em>)</strong>: Permite o <em>e-mail</em>. Isso é usado quando o remetente quer permitir que todos os <em>e-mails</em> sejam entregues, independentemente de qual servidor os tenha enviado.</li>
+      <li><strong>?all (<em>neutral</em>)</strong>: Quando esta opção está configurada, o <em>e-mail</em> é tratado como se não existisse um registro SPF. Geralmente utilizado quando um domínio não pode, ou não quer definir se um determinado servidor está ou não autorizado a enviar <em>e-mails</em> em nome do domínio.</li>
+    </ol>
+  </li>
+</ul>
+
+<p>É importante lembrar que o atributo <strong>all</strong> deve ser usado com cuidado, pois ele determina como os servidores de <em>e-mail</em> lidam com os <em>e-mails</em> enviados por servidores não autorizados. Se o atributo for configurado incorretamente, isso pode levar a <em>e-mails</em> legítimos sendo marcados como <em>spam</em> ou rejeitados completamente.</p>
+
+<p>Estes são apenas alguns dos atributos mais comuns que podem ser incluídos em um registro SPF. Existem outros atributos disponíveis também. É importante lembrar que os registros SPF devem ser mantidos atualizados para garantir que apenas os servidores de <em>e-mail</em> autorizados estejam incluídos na política.</p>
+
+<h2 id="dkim">DKIM</h2>
+
+<p>DKIM (<em>DomainKeys Identified Mail</em>) é uma técnica de autenticação de <em>e-mail</em> que permite verificar a integridade e a origem de um <em>e-mail</em>. Ele foi desenvolvido como uma maneira de combater o <em>spam</em> e a fraude por <em>e-mail</em>, permitindo que os destinatários verifiquem se um <em>e-mail</em> foi realmente enviado pelo remetente que alega ter enviado.</p>
+
+<p>O processo de configuração do DKIM envolve a geração de uma chave privada e pública. A chave privada é usada pelo remetente para assinar os <em>e-mails</em> que enviam, enquanto a chave pública é publicada no DNS do domínio do remetente. Quando um <em>e-mail</em> é enviado, o remetente adiciona um cabeçalho ao <em>e-mail</em> contendo um registro criptografado usando a chave privada.</p>
+
+<p>Quando o <em>e-mail</em> é recebido pelo destinatário, o servidor de <em>e-mail</em> do destinatário procura a chave pública no DNS do domínio do remetente. Se a chave pública estiver disponível, o servidor de <em>e-mail</em> do destinatário usa a chave pública para decifrar o registro criptografado no cabeçalho do <em>e-mail</em>. Se o registro decifrado corresponder ao conteúdo do <em>e-mail</em>, este é considerado autêntico. Se houver alguma diferença entre o registro decifrado e o conteúdo do <em>e-mail</em>, o <em>e-mail</em> pode ser considerado alterado ou falsificado.</p>
+
+<p>O objetivo do DKIM é garantir que os <em>e-mails</em> não sejam alterados durante a transmissão e que eles realmente venham da organização que diz ter enviado. Isso pode ajudar a proteger contra <em>spam</em>, <em>phishing</em> e outras formas de fraude por <em>e-mail</em>.</p>
+
+<h2 id="dmarc">DMARC</h2>
+
+<p>DMARC (<em>Domain-based Message Authentication, Reporting &amp; Conformance</em>) é um protocolo de segurança de <em>e-mail</em> que permite que os remetentes especifiquem qual mecanismo de autenticação de <em>e-mail</em> deve ser usado quando os <em>e-mails</em> são enviados de um determinado domínio. Ele também permite que os remetentes recebam relatórios sobre os <em>e-mails</em> que são enviados em seu nome e que falham na verificação de autenticidade. Isso pode ajudar os remetentes a detectar e prevenir a fraude por <em>e-mail</em>, como <em>spam</em> e <em>phishing</em>.</p>
+
+<p>O DMARC funciona verificando se os mecanismos de autenticação de <em>e-mail</em>, como SPF e DKIM, passam na verificação de autenticidade. Se um <em>e-mail</em> falhar na verificação de autenticidade, o remetente pode optar por rejeitar o <em>e-mail</em> ou colocá-lo na caixa de <em>spam</em>.</p>
+
+<p>Para configurar o DMARC, os remetentes precisam adicionar um registro TXT ao DNS do seu domínio que especifique qual mecanismo de autenticação de <em>e-mail</em> deve ser usado e como os <em>e-mails</em> que falharem na verificação de autenticidade devem ser tratados. Os destinatários podem então verificar o registro DMARC para garantir que o <em>e-mail</em> foi enviado por um remetente legítimo.</p>
+
+<p>Abaixo um exemplo de registro TXT no DNS para configurar o DMARC:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>_dmarc.seudominio.com.br. IN TXT "v=DMARC1; p=reject; pct=100; rua=mailto:seuemail@seudominio.com.br"
+</code></pre></div></div>
+
+<p>O registro DMARC é composto por vários campos que especificam como o DMARC deve ser usado. Alguns dos campos mais comuns e suas respectivas finalidades são:</p>
+
+<ul>
+  <li><strong>v=DMARC1 (<em>version</em>)</strong>: Especifica qual versão do DMARC está sendo usada. Atualmente, a única versão disponível é DMARC1.</li>
+  <li><strong>p= (<em>policy</em>)</strong>: Especifica como os <em>e-mails</em> que falharem na verificação de autenticidade devem ser tratados. As opções são “<strong><em>none</em></strong>” (não fazer nada), “<strong><em>quarantine</em></strong>” (colocar na caixa de <em>spam</em>) e “<strong><em>reject</em></strong>” (rejeitar o <em>e-mail</em>).</li>
+  <li><strong>pct= (<em>percentage</em>)</strong>: Especifica a porcentagem de <em>e-mails</em> que devem ser verificados pelo DMARC. O valor padrão é 100, o que significa que todos os <em>e-mails</em> serão verificados.</li>
+  <li><strong>sp= (<em>subdomain policy</em>)</strong>: Especifica qual mecanismo de autenticação de <em>e-mail</em> deve ser usado para os <em>e-mails</em> enviados de subdomínios. As opções são “<strong><em>none</em></strong>” (não usar autenticação de <em>e-mail</em>), “<strong><em>quarantine</em></strong>” (colocar na caixa de <em>spam</em>) e “<strong><em>reject</em></strong>” (rejeitar o <em>e-mail</em>).</li>
+  <li><strong>adkim= (<em>DKIM alignment</em>)</strong>: Especifica qual modo de alinhamento deve ser usado para o DKIM. As opções são “<strong>r</strong>” (rigoroso) e “<strong>s</strong>” (relaxado). O alinhamento rigoroso exige que o remetente e o destinatário usem o mesmo domínio, enquanto o alinhamento relaxado permite que o remetente e o destinatário usem domínios diferentes.</li>
+  <li><strong>aspf= (<em>SPF alignment</em>)</strong>: Especifica qual modo de alinhamento deve ser usado para o SPF. As opções são “<strong>r</strong>” (rigoroso) e “<strong>s</strong>” (relaxado). O alinhamento rigoroso exige que o remetente e o destinatário usem o mesmo domínio, enquanto o alinhamento relaxado permite que o remetente e o destinatário usem domínios diferentes.</li>
+  <li><strong>rua= (<em>aggregated reports</em>)</strong>: Especifica o endereço de <em>e-mail</em> onde os relatórios DMARC devem ser enviados.</li>
+  <li><strong>ruf= (<em>forensic reports</em>)</strong>: Especifica o endereço de <em>e-mail</em> onde os relatórios DMARC de falha de autenticidade devem ser enviados.</li>
+</ul>
+
+<h2 id="como-um-servidor-de-e-mails-interpreta-todas-estas-regras">Como um servidor de e-mails interpreta todas estas regras</h2>
+
+<p>De fato, pela criticidade que o <em>e-mail spoofing</em> pode atingir, foram criadas vários protocolos para se certificar da autenticidade de <em>e-mails</em> recebidos e métodos para diminuir este tipo de ação. Porém, dada a delicadeza do processo de envio e recebimento de <em>e-mails</em>, que pode ter diversas regras de negócio, várias opções foram criadas para cada protocolo, que podem e são interpretadas tanto pelo servidor de recebimento, quanto de envio de <em>e-mails</em>.</p>
+
+<p>As configurações de cada protocolo são estritamente feitas, com base na regra de negócio. Enquanto uma configuração extremamente restrita pode ocasionar problemas de recebimento de <em>e-mails</em> autênticos, uma configuração relaxada pode facilitar a falsificação de <em>e-mails</em>, e por sua vez, uma configuração moderada pode evitar problemas de envio/recebimento assim como também abrir caminho para a falsificação de <em>e-mails</em>.</p>
+
+<h3 id="ordem-de-verificação-de-protocolos">Ordem de verificação de protocolos</h3>
+
+<p>Não há uma ordem específica em que os servidores de <em>e-mail</em> devem verificar o DMARC ou o SPF. Alguns servidores podem verificar o SPF primeiro, enquanto outros podem verificar o DMARC primeiro. Alguns servidores também podem usar outras técnicas de autenticação, como a verificação de chave DKIM, antes de verificar o SPF ou o DMARC.</p>
+
+<p>A ordem em que os servidores de <em>e-mail</em> verificam os diferentes métodos de autenticação de <em>e-mail</em> pode variar dependendo de vários fatores, como as configurações do servidor, as políticas de segurança do <em>e-mail</em> da empresa e as práticas recomendadas pelos fornecedores de serviços de <em>e-mail</em>.</p>
+
+<h2 id="como-são-feitos-ataques-de-e-mail-spoofing">Como são feitos ataques de <em>e-mail spoofing</em></h2>
+
+<p>Conforme visto anteriormente, um ataque de <em>e-mail spoofing</em> pode ser feito ao modificar informações de um cabeçalho de <em>e-mail</em>. Os atacantes podem modificar o cabeçalho do <em>e-mail</em> para fazer com que pareça que o <em>e-mail</em> foi enviado por outra pessoa ou empresa.</p>
+
+<p>Isso pode ser feito diretamente no servidor de envio de <em>e-mails</em>, ou <strong>SMTP</strong> (<em>Simple Mail Transfer Protocol</em>). Existem plataforma conhecidas e específicas que “automatizam” estas alterações no cabeçalho permitindo a exploração da vulnerabilidade, como o <a href="https://emkei.cz/">Emkey’s Mailer</a> e o <a href="https://anonymailer.net/">Anonymailer</a>.</p>
+
+<p>Este ataque também pode surgir de um servidor SMTP “mal configurado” que permite a alteração de informações de cabeçalho ao enviar <em>e-mails</em>.</p>
+
+<h2 id="encontrando-possíveis-vulnerabilidades-de-e-mail-spoofing">Encontrando possíveis vulnerabilidades de <em>e-mail spoofing</em></h2>
+
+<p>Uma vez que sabemos da existência de diversas combinações de configuração, principalmente entre SPF e DMARC, e de que a checagem ocorre nas duas pontas, destinatário e remetente, a possibilidade de uma exploração de <em>e-mail spoofing</em> bem-sucedida se torna uma questão de “ligar os pontos”.</p>
+
+<p>Mas é importante ressaltar que, como esta análise é feita exclusivamente nas configurações de protocolos, mesmo que os registros sejam aparentemente vulneráveis a <em>spoofing</em>, ainda há grandes possibilidades de serviços de terceiros mitigarem a exploração, como filtros e <em>firewalls</em> de e-mail. Porém, não impede que uma tentativa seja feita em uma situação de um <em>pentest</em> ou qualquer outro teste <strong>dentro de parâmetros legais</strong>.</p>
+
+<p>Partindo deste princípio, e de experiência no mundo real, é possível enumerar possíveis vetores de ataque em potencial. Sabendo que o SPF tem quantidade reduzida de parâmetros em comparação ao DMARC, a seguir serão expressas possibilidades com base nas diferentes variações da propriedade <strong>all</strong>.</p>
+
+<h3 id="spf-com--all-hard-fail">SPF com -all (<em>hard fail</em>)</h3>
+
+<p>Durante muito tempo, eu mesmo acreditei que se o atributo <strong>-all</strong> do SPF era suficiente para bloquear um ataque de <em>e-mail spoofing</em>, porém com a presença (ou não) de algumas configurações de DMARC, ainda é possível realizar um ataque.</p>
+
+<p>A tabela abaixo, mostra combinações de atributos DMARC e possíveis consequências:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th><strong>Configurações DMARC</strong></th>
+      <th><strong>Possível consequência</strong></th>
+      <th> </th>
+      <th> </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>p=</strong> e <strong>aspf=</strong> configurados e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>ausência de <strong>aspf</strong> e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong> e <strong>aspf=r</strong> ou ausência de <strong>aspf=</strong></td>
+      <td><em>Spoofing</em> possível a depender da política do destinatário</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, <strong>aspf=r</strong> e <strong>sp=reject</strong> ou <strong>sp=quarentine</strong></td>
+      <td>Possível <em>spoofing</em> dentro do domínio (destinatário e remetente dentro da mesma organização)</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, ausência de <strong>aspf=</strong> e <strong>sp=reject</strong> ou <strong>sp=quarentine</strong></td>
+      <td>Possível <em>spoofing</em> dentro do domínio (destinatário e remetente dentro da mesma organização)</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, <strong>sp=none</strong> e ausência de <strong>aspf=</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="spf-com-all-soft-fail">SPF com ~all (<em>soft fail</em>)</h3>
+
+<p>O atributo <strong>~all</strong> por sí só já é mais flexível, permitindo possibilidades de <em>spoofing</em> mesmo com regras mais rígidas no DMARC.</p>
+
+<p>A tabela abaixo, mostra combinações de atributos DMARC e possíveis consequências:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th><strong>Configurações DMARC</strong></th>
+      <th><strong>Possível consequência</strong></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>p=none</strong> <strong>sp=reject</strong> ou <strong>sp=quarentine</strong></td>
+      <td>Possível <em>spoofing</em> dentro do domínio (destinatário e remetente dentro da mesma organização)</td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong> e ausência de <strong>sp=</strong></td>
+      <td>Possível <em>spoofing</em></td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong> e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio e possível <em>spoofing</em> dentro do domínio (destinatário e remetente dentro da mesma organização)</td>
+    </tr>
+    <tr>
+      <td><strong>p=reject</strong> ou <strong>p=quarentine</strong>, ausência de <strong>aspf=</strong> e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio</td>
+    </tr>
+    <tr>
+      <td><strong>p=reject</strong> ou <strong>p=quarentine</strong>, <strong>aspf=</strong> configurado e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="spf-com-all-neutral">SPF com ?all (<em>neutral</em>)</h3>
+
+<p>O atributo <strong>~all</strong> faz com que o registro SPF de fato exista (o DMARC exige que o SPF ou DKIM existam para que seja configurado), mas não impõe nenhuma regra, como se não estivesse presente.</p>
+
+<p>Esta configuração, faz com que a autenticação seja feita somente pelo DMARC ou DKIM, quando presente.</p>
+
+<p>A tabela abaixo, mostra combinações de atributos DMARC e possíveis consequências:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th><strong>Configurações DMARC</strong></th>
+      <th><strong>Possível consequência</strong></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>p=reject</strong> ou <strong>p=quarentine</strong>, <strong>aspf=</strong> configurado e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio a depender da política do destinatário</td>
+    </tr>
+    <tr>
+      <td><strong>p=reject</strong> ou <strong>p=quarentine</strong>, ausência de <strong>aspf=</strong> e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio a depender da política do destinatário</td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, <strong>aspf=r</strong> e ausência de <strong>sp=</strong></td>
+      <td>Possível <em>spoofing</em></td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, <strong>aspf=r</strong> e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio</td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, <strong>aspf=s</strong> ou ausência de <strong>aspf=</strong> e <strong>sp=none</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio</td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, <strong>aspf=s</strong> ou ausência de <strong>aspf=</strong> e ausência de <strong>sp=</strong></td>
+      <td>Possível <em>spoofing</em> de subdomínio a depender da política do destinatário</td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, <strong>aspf=</strong> configurado e <strong>sp=reject</strong> ou <strong>sp=quarentine</strong></td>
+      <td>Possível <em>spoofing</em> dentro do domínio (destinatário e remetente dentro da mesma organização)</td>
+    </tr>
+    <tr>
+      <td><strong>p=none</strong>, auseência de <strong>aspf=</strong> e <strong>sp=reject</strong></td>
+      <td>Possível <em>spoofing</em> dentro do domínio (destinatário e remetente dentro da mesma organização)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="outras-configurações-que-podem-levar-ao-e-mail-spoofing">Outras configurações que podem levar ao <em>e-mail spoofing</em></h3>
+
+<p>Além destas combinações de configurações possíveis entre SPF e DMARC, existem outros fatores que podem possibilitar a falsificação de <em>e-mails</em>. Abaixo um descritivo:</p>
+
+<ul>
+  <li><strong>pct=</strong> com qualquer valor menor que 100: Significa que não serão todos os <em>e-mails</em> que passarão pela validação de autenticidade, logo pode levar ao <em>spoofing</em>.</li>
+  <li>Registro SPF com vários domínios no <strong><em>include</em></strong>: A existência de vários domínios permitidos no envio de <em>e-mails</em> pode levar a divergências de configuração no registro TXT levando ao <em>spoofing.</em></li>
+  <li>Mais de um atributo <strong>all</strong> no mesmo registro TXT sem o <strong>p=</strong> no DMARC.</li>
+  <li>Ausência de registro SPF e ausência do <strong>p=</strong> no DMARC.</li>
+  <li>Qualquer opção de atributo <strong>all</strong> sem o <strong>p=</strong> no DMARC.</li>
+</ul>
+
+<h3 id="automatizando-a-enumeração-das-configurações">Automatizando a enumeração das configurações</h3>
+
+<p>Todas as informações sobre as configurações e atributos são públicas e de fácil acesso/leitura (menos a chave privada do DKIM) através de consultas nos registros TXT do DNS e DMARC. Estas informações precisam desta exposição justamente para que todas as pontas de uma comunicação via <em>e-mail</em> possam consultá-las.</p>
+
+<p>É possível consultá-las em serviços online como o <a href="https://mxtoolbox.com/">MX Toolbox</a> assim como ferramentas normalmente encontradas em sistema operacional Linux (mas não limitado somente a eles), como <code class="language-plaintext highlighter-rouge">host</code> e <code class="language-plaintext highlighter-rouge">dig</code>, e outras ferramentas criadas especificamente com esta finalidade.</p>
+
+<p>A checagem destas combinações também foi implementada em uma das ferramentas desenvolvida por mim. <a href="https://github.com/h41stur/nina">Nina</a> possui um módulo que usa basicamente todo o conteúdo deste artigo para cruzar informações e analisá-las.</p>
+
+<p>Abaixo um demonstrativo:</p>
+
+<p><img src="/img/posts/Pasted%20image%2020230106212409.png" alt="Output da ferramenta" /></p>
+
+<h2 id="boas-práticas-para-dificultar-o-e-mail-spoofing">Boas práticas para dificultar o <em>e-mail spoofing</em></h2>
+
+<p>Conforme visto, quando se trata de uma análise puramente técnica, a melhor prática para evitar falsificações de <em>e-mail</em>, são as regras de configuração mais restritas possíveis, porém, no mundo real existem as <strong>regras de negócio</strong>, que são o verdadeiro motivo por trás de quase tudo, e ditam como o comportamento deve ser direcionado.</p>
+
+<p>Portanto, existem boas práticas que devem ser avaliadas para garantir o máximo de proteção possível, sem divergirem com as regras de negócio. Algumas delas são:</p>
+
+<ol>
+  <li>
+    <p>Configurar o DMARC para o domínio: O primeiro passo é adicionar o registro DMARC ao arquivo DNS do domínio. Isso permitirá que os servidores de <em>e-mail</em> verifiquem as políticas de autenticação para <em>e-mails</em> enviados em nome do domínio.</p>
+  </li>
+  <li>
+    <p>Definir as políticas de autenticação de <em>e-mail</em>: No registro DMARC, definir as políticas de autenticação de <em>e-mail</em> que sejam aplicadas aos e<em>-mails</em> enviados em nome do domínio. Isso pode incluir exigir que os <em>e-mails</em> sejam assinados com chave DKIM e verificados pelo SPF.</p>
+  </li>
+  <li>
+    <p>Ativar os relatórios de usagem: Ativar os relatórios de usagem (RUA e RUF) para receber informações sobre os <em>e-mails</em> enviados em nome do domínio. Isso permitirá o monitoramento do uso de <em>e-mail</em> do domínio e a detecção de possíveis ataques de <em>spoofing</em>.</p>
+  </li>
+  <li>
+    <p>Configurar as ações a serem tomadas em caso de falha: No registro DMARC, definir as ações a serem tomadas em caso de falha na verificação de autenticidade de <em>e-mail</em>. Isso pode incluir marcar os <em>e-mails</em> como <em>spam</em> ou rejeitar os <em>e-mails</em> que não cumprem as diretivas.</p>
+  </li>
+  <li>
+    <p>Ativar a verificação de chave DKIM: A verificação de chave DKIM é outra ferramenta de segurança de <em>e-mail</em> que ajuda a proteger contra o <em>spoofing</em>.</p>
+  </li>
+</ol>
+
+<p>Além de configurações, é preciso medidas de fortalecimento comportamental por parte de usuários, algumas dessas medidas incluem verificar a veracidade de todos os e-mails recebidos, não clicar em links ou baixar arquivos de e-mails desconhecidos, usar ferramentas de segurança de e-mail e manter o software de segurança atualizado.</p>
+
+<h2 id="conclusão">Conclusão</h2>
+
+<p>Este estudo surgiu de uma exploração bem-sucedida em um servidor no qual eu acreditava não ser possível falsificar um <em>e-mail</em>. Na busca pela resposta de como isto aconteceu, o conteúdo resumido neste artigo foi adquirido de diversas fontes e documentações.</p>
+
+<p>O <em>e-mail spoofing</em> é uma ameaça constante na internet que pode levar a um comprometimento crítiuco da imagem de uma corporação, e, muitas vezes, difícil de detectar e/ou rastrear. No entanto, tomando as medidas de segurança adequadas, tanto os usuários quanto os administradores de domínio podem ajudar a proteger-se contra esses tipos de ataques e manter sua informação pessoal segura.</p>
+
+<h2 id="referências">Referências</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc7208">RFC-7208</a></li>
+  <li><a href="https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-anti-spoofing?view=o365-worldwide">How Microsoft 365 uses Sender Policy Framework (SPF) to prevent spoofing</a></li>
+  <li><a href="https://www.trustedsec.com/blog/real-or-fake-spoof-proofing-email-with-spf-dkim-and-dmarc/">Real or Fake? Spoof-Proofing Email With SPF, DKIM, and DMARC</a></li>
+</ul>

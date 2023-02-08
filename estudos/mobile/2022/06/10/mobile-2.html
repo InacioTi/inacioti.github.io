@@ -1,0 +1,351 @@
+<p><img src="/img/posts/android-logo.png" alt="Pentesting Android" title="Pentesting Android" /></p>
+
+<ul>
+  <li><a href="#introdução">INTRODUÇÃO</a></li>
+  <li><a href="#componentes-de-uma-aplicação-android">COMPONENTES DE UMA APLICAÇÃO ANDROID</a>
+    <ul>
+      <li><a href="#activities">Activities</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#content-providers">Content Providers</a></li>
+      <li><a href="#broadcast-receivers">Broadcast Receivers</a></li>
+      <li><a href="#android-manifest">Android Manifest</a>
+        <ul>
+          <li><a href="#application-information">Application information</a></li>
+          <li><a href="#user-permissions">User permissions</a></li>
+          <li><a href="#components">Components</a></li>
+          <li><a href="#components-resources">Components resources</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#anatomia-do-manifest">ANATOMIA DO MANIFEST</a></li>
+  <li><a href="#intents-e-intent-filters">INTENTS E INTENT FILTERS</a></li>
+  <li><a href="#conclusão">CONCLUSÃO</a></li>
+</ul>
+
+<h1 id="introdução">INTRODUÇÃO</h1>
+
+<p>Dando continuidade aos artigos sobre pentesting mobile, como já vimos sobre elementos que fazem parte deste universo, agora vamos entender um pouco sobre o básico que compõe um aplicativo Android.</p>
+
+<h1 id="componentes-de-uma-aplicação-android">COMPONENTES DE UMA APLICAÇÃO ANDROID</h1>
+
+<p>Assim como qualquer programa, feito para qualquer sistema operacional, uma aplicação Android tem uma arquitetura específica que contém componentes específicos. Esta padronização permite que o desenvolvimento seja feito de forma a atender as especificações do SO.</p>
+
+<p>Um aplicativo Android, ou um APK, nada mais é do que um arquivo compactado contendo toda a estrutura da aplicação, inclusive com um descompactador como <code class="language-plaintext highlighter-rouge">unzip</code> é possível descompactar o pacote e ter acesso a sua estrutura, porém, desta forma, a maior parte das informações estará criptografada.</p>
+
+<p>Alguns compentes padrões em aplicações Android, são possíveis de se encontrar no <code class="language-plaintext highlighter-rouge">AndroidManigest.xml</code> que será abordado mais adiante. Porém, é de extrema importância que estes componetes sejam explanados.</p>
+
+<h2 id="activities">Activities</h2>
+
+<p>As <code class="language-plaintext highlighter-rouge">activities</code> nada mais são do que os pontos de interação de uma aplicação com o usuário, ou seja, toda tela da qual o usuário pode interagir, seja com botões, caixas de texto e demais interações.</p>
+
+<p>Um exemplo abstrato seria de uma aplicação de mensagens, onde existe uma activiy para listar as mensagens recabidas, uma para abrir uma conversa, uma para digitar um texto. Sendo basicamente uma interface com o usuário.</p>
+
+<h2 id="services">Services</h2>
+
+<p>Os <code class="language-plaintext highlighter-rouge">services</code>, ou serviços, tem uma funcionalidade parecida com as activities, porém, não tem uma interface com o usuário, sendo executado geralmente em <em>background</em>.</p>
+
+<p>Um exemplo abstrato seria em uma aplicação de monitoramento, como monitor de energia. Ele está sempre em execução, porém na maior parte do tempo sendo executado em <em>background</em> utilizando <code class="language-plaintext highlighter-rouge">services</code>. Quando é aberto para interação com o usuário, ele chama as <code class="language-plaintext highlighter-rouge">activities</code>.</p>
+
+<h2 id="content-providers">Content Providers</h2>
+
+<p>Os <code class="language-plaintext highlighter-rouge">content providers</code> são espaços de armazenamento que podem ser acessados como recuros de linguagem, semelhante a uma base de dados. Este componente é muito sensível em uma aplicação e será detalhado mais a frente.</p>
+
+<h2 id="broadcast-receivers">Broadcast Receivers</h2>
+
+<p>Os <code class="language-plaintext highlighter-rouge">broadcast receivers</code> são elementos de uma aplicação que fazem a comunicação com o próprio sistema e outras aplicações. Geralmente quando uma aplicação é instalada, ela solicita permissão para utilizar recursos como a câmera, telefone, armazenamento, entre outros. Esta comunicação com os demais recursos de um dispositivo é feita fia <code class="language-plaintext highlighter-rouge">broadcast receiver</code>.</p>
+
+<h2 id="android-manifest">Android Manifest</h2>
+
+<p>O <code class="language-plaintext highlighter-rouge">AndroindManifest.xml</code> é o arquivo principal dentro de um APK. Sendo armazenado na raíz do pacote, este arquivo contém basicamente tudo que uma aplicação está programada para fazer ou usar.</p>
+
+<p>Este arquivo, também pode ser separado em partes:</p>
+
+<h3 id="application-information">Application information</h3>
+
+<p>Esta parte do AndroidManifest.xml contém os dados sobre a própria aplicação, como seu nome, a versão do SDK para qual foi feita, a versão mínima do SDK em que pode ser executado.</p>
+
+<h3 id="user-permissions">User permissions</h3>
+
+<p>Esta parte especifica todos os recursos do sistema que a aplicação precisa ter acesso, como internet, câmera, GPS.</p>
+
+<p>Caso uma aplicação utilize um recurso que não esteja explícito nesta sessão do AndroidManifest.xml, o Google simplesmente não terá acesso a esta informação e este recurso não poderá ser utilizado. Pois o Android, utiliza esta sessão para demonstrar para o usuário, todos os recursos solicitados pela aplicação e solicitar sua permissão.</p>
+
+<h3 id="components">Components</h3>
+
+<p>Esta é a parte do AndroindManifest.xml que contém todos os componentes citados anteriormente, como as activities, services content providers e broadcast receivers.</p>
+
+<h3 id="components-resources">Components resources</h3>
+
+<p>Esta parte contém o direcionamento para recursos da aplicação como arquivos de imagem, xml contendo bibliotecas para a aplicação.</p>
+
+<h1 id="anatomia-do-manifest">ANATOMIA DO MANIFEST</h1>
+
+<p>Por se tratar de um arquivo <code class="language-plaintext highlighter-rouge">xml</code> o AndroidManifest.xml trabalha com <code class="language-plaintext highlighter-rouge">tags</code>. A tag principal, se chama <code class="language-plaintext highlighter-rouge">&lt;manifest ..&gt;</code> e um exemplo de sua sintaxe pode ser vista abaixo.</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;manifest</span> <span class="na">xmlns:android=</span><span class="s">"https://schemas.android.com/apk/res/android"</span>
+    <span class="na">package=</span><span class="s">"string"</span>
+    <span class="na">android:sharedUserId=</span><span class="s">"string"</span>
+    <span class="na">android:sharedUserLabel=</span><span class="s">"string resource"</span>
+    <span class="na">android:versionCode=</span><span class="s">"integer"</span>
+    <span class="na">android:versionName=</span><span class="s">"string"</span>
+    <span class="na">android:installLocation=</span><span class="s">["auto"</span> <span class="err">|</span> <span class="err">"internalOnly"</span> <span class="err">|</span> <span class="err">"preferExternal"]</span> <span class="nt">&gt;</span>
+<span class="nt">&lt;/manifest&gt;</span>
+</code></pre></div></div>
+<p>É importante salientar que o parâmetro <code class="language-plaintext highlighter-rouge">package</code> dentro da tag principal, contém o nome da aplicação utilizado para referenciar os processos dentro do Android.</p>
+
+<p>Outra tag utilizada é a <code class="language-plaintext highlighter-rouge">&lt;user-permission ...&gt;</code> que contém as permissões que a aplicação precisa para solicitar recursos do sistema. Esta tag fica dentro da tag <code class="language-plaintext highlighter-rouge">manifest</code>, alguns exemplos de sintaxe de permissão são:</p>
+
+<ul>
+  <li>android:name=”android.permission.CAMERA”</li>
+  <li>android:name=”android.permission.ACCESS_FINE_LOCATION”</li>
+  <li>android:name=”android.permission.READ_CONTACTS”</li>
+</ul>
+
+<p>Sua sintaxe é desta forma:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;user-permission</span> <span class="na">android:name=</span><span class="s">"string"</span>
+    <span class="na">android:maxSdkVersion=</span><span class="s">"integer"</span> <span class="nt">/&gt;</span>
+</code></pre></div></div>
+
+<p>Outra tag que está abaixo da tag <code class="language-plaintext highlighter-rouge">manifest</code> é a <code class="language-plaintext highlighter-rouge">&lt;application ...&gt;</code>. Esta tag contém muitas informações sobre o funcionamento da aplicação. Sua sintaxe é desta forma:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;application</span> <span class="na">android:allowTaskReparenting=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:allowBackup=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:allowClearUserData=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:allowNativeHeapPointerTagging=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:backupAgent=</span><span class="s">"string"</span>
+             <span class="na">android:backupInForeground=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:banner=</span><span class="s">"drawable resource"</span>
+             <span class="na">android:dataExtractionRules=</span><span class="s">"string resource"</span>
+             <span class="na">android:debuggable=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:description=</span><span class="s">"string resource"</span>
+             <span class="na">android:enabled=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:extractNativeLibs=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:fullBackupContent=</span><span class="s">"string"</span>
+             <span class="na">android:fullBackupOnly=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:gwpAsanMode=</span><span class="s">["always"</span> <span class="err">|</span> <span class="err">"never"]</span>
+             <span class="na">android:hasCode=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:hasFragileUserData=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:hardwareAccelerated=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:icon=</span><span class="s">"drawable resource"</span>
+             <span class="na">android:isGame=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:killAfterRestore=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:largeHeap=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:label=</span><span class="s">"string resource"</span>
+             <span class="na">android:logo=</span><span class="s">"drawable resource"</span>
+             <span class="na">android:manageSpaceActivity=</span><span class="s">"string"</span>
+             <span class="na">android:name=</span><span class="s">"string"</span>
+             <span class="na">android:networkSecurityConfig=</span><span class="s">"xml resource"</span>
+             <span class="na">android:permission=</span><span class="s">"string"</span>
+             <span class="na">android:persistent=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:process=</span><span class="s">"string"</span>
+             <span class="na">android:restoreAnyVersion=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:requestLegacyExternalStorage=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:requiredAccountType=</span><span class="s">"string"</span>
+             <span class="na">android:resizeableActivity=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:restrictedAccountType=</span><span class="s">"string"</span>
+             <span class="na">android:supportsRtl=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:taskAffinity=</span><span class="s">"string"</span>
+             <span class="na">android:testOnly=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:theme=</span><span class="s">"resource or theme"</span>
+             <span class="na">android:uiOptions=</span><span class="s">["none"</span> <span class="err">|</span> <span class="err">"splitActionBarWhenNarrow"]</span>
+             <span class="na">android:usesCleartextTraffic=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+             <span class="na">android:vmSafeMode=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span> <span class="nt">&gt;</span>
+    . . .
+<span class="nt">&lt;/application&gt;</span>
+</code></pre></div></div>
+<p>Entre estas informações, duas são muito importantes de se observar:</p>
+
+<ul>
+  <li>android:allowBackup</li>
+  <li>android:debuggable</li>
+</ul>
+
+<p>A tag <code class="language-plaintext highlighter-rouge">activity</code> contém, conforme explicado anteriormente, contém todas as interfaces com o usuário. Sua sintaxe dentro do AndroidManifest.xml é desta formaa;</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;activity</span> <span class="na">android:allowEmbedded=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:allowTaskReparenting=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:alwaysRetainTaskState=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:autoRemoveFromRecents=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:banner=</span><span class="s">"drawable resource"</span>
+          <span class="na">android:clearTaskOnLaunch=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:colorMode=</span><span class="s">[</span> <span class="err">"hdr"</span> <span class="err">|</span> <span class="err">"wideColorGamut"]</span>
+          <span class="na">android:configChanges=</span><span class="s">["mcc",</span> <span class="err">"mnc",</span> <span class="err">"locale",</span>
+                                 <span class="err">"touchscreen",</span> <span class="err">"keyboard",</span> <span class="err">"keyboardHidden",</span>
+                                 <span class="err">"navigation",</span> <span class="err">"screenLayout",</span> <span class="err">"fontScale",</span>
+                                 <span class="err">"uiMode",</span> <span class="err">"orientation",</span> <span class="err">"density",</span>
+                                 <span class="err">"screenSize",</span> <span class="err">"smallestScreenSize"]</span>
+          <span class="na">android:directBootAware=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:documentLaunchMode=</span><span class="s">["intoExisting"</span> <span class="err">|</span> <span class="err">"always"</span> <span class="err">|</span>
+                                  <span class="err">"none"</span> <span class="err">|</span> <span class="err">"never"]</span>
+          <span class="na">android:enabled=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:excludeFromRecents=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:exported=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:finishOnTaskLaunch=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:hardwareAccelerated=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:icon=</span><span class="s">"drawable resource"</span>
+          <span class="na">android:immersive=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:label=</span><span class="s">"string resource"</span>
+          <span class="na">android:launchMode=</span><span class="s">["standard"</span> <span class="err">|</span> <span class="err">"singleTop"</span> <span class="err">|</span>
+                              <span class="err">"singleTask"</span> <span class="err">|</span> <span class="err">"singleInstance"</span> <span class="err">|</span> <span class="err">"singleInstancePerTask"]</span>
+          <span class="na">android:lockTaskMode=</span><span class="s">["normal"</span> <span class="err">|</span> <span class="err">"never"</span> <span class="err">|</span>
+                              <span class="err">"if_whitelisted"</span> <span class="err">|</span> <span class="err">"always"]</span>
+          <span class="na">android:maxRecents=</span><span class="s">"integer"</span>
+          <span class="na">android:maxAspectRatio=</span><span class="s">"float"</span>
+          <span class="na">android:multiprocess=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:name=</span><span class="s">"string"</span>
+          <span class="na">android:noHistory=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>  
+          <span class="na">android:parentActivityName=</span><span class="s">"string"</span> 
+          <span class="na">android:persistableMode=</span><span class="s">["persistRootOnly"</span> <span class="err">|</span> 
+                                   <span class="err">"persistAcrossReboots"</span> <span class="err">|</span> <span class="err">"persistNever"]</span>
+          <span class="na">android:permission=</span><span class="s">"string"</span>
+          <span class="na">android:process=</span><span class="s">"string"</span>
+          <span class="na">android:relinquishTaskIdentity=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:resizeableActivity=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:screenOrientation=</span><span class="s">["unspecified"</span> <span class="err">|</span> <span class="err">"behind"</span> <span class="err">|</span>
+                                     <span class="err">"landscape"</span> <span class="err">|</span> <span class="err">"portrait"</span> <span class="err">|</span>
+                                     <span class="err">"reverseLandscape"</span> <span class="err">|</span> <span class="err">"reversePortrait"</span> <span class="err">|</span>
+                                     <span class="err">"sensorLandscape"</span> <span class="err">|</span> <span class="err">"sensorPortrait"</span> <span class="err">|</span>
+                                     <span class="err">"userLandscape"</span> <span class="err">|</span> <span class="err">"userPortrait"</span> <span class="err">|</span>
+                                     <span class="err">"sensor"</span> <span class="err">|</span> <span class="err">"fullSensor"</span> <span class="err">|</span> <span class="err">"nosensor"</span> <span class="err">|</span>
+                                     <span class="err">"user"</span> <span class="err">|</span> <span class="err">"fullUser"</span> <span class="err">|</span> <span class="err">"locked"]</span>
+          <span class="na">android:showForAllUsers=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:stateNotNeeded=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:supportsPictureInPicture=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:taskAffinity=</span><span class="s">"string"</span>
+          <span class="na">android:theme=</span><span class="s">"resource or theme"</span>
+          <span class="na">android:uiOptions=</span><span class="s">["none"</span> <span class="err">|</span> <span class="err">"splitActionBarWhenNarrow"]</span>
+          <span class="na">android:windowSoftInputMode=</span><span class="s">["stateUnspecified",</span>
+                                       <span class="err">"stateUnchanged",</span> <span class="err">"stateHidden",</span>
+                                       <span class="err">"stateAlwaysHidden",</span> <span class="err">"stateVisible",</span>
+                                       <span class="err">"stateAlwaysVisible",</span> <span class="err">"adjustUnspecified",</span>
+                                       <span class="err">"adjustResize",</span> <span class="err">"adjustPan"]</span> <span class="nt">&gt;</span>   
+    . . .
+<span class="nt">&lt;/activity&gt;</span>
+</code></pre></div></div>
+<p>A tag <code class="language-plaintext highlighter-rouge">&lt;service ...&gt;</code> assim como já dito, contém os services da aplicação. Sua sintaxe é desta forma:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;service</span> <span class="na">android:description=</span><span class="s">"string resource"</span>
+         <span class="na">android:directBootAware=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+         <span class="na">android:enabled=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+         <span class="na">android:exported=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+         <span class="na">android:foregroundServiceType=</span><span class="s">["camera"</span> <span class="err">|</span> <span class="err">"connectedDevice"</span> <span class="err">|</span>
+                                        <span class="err">"dataSync"</span> <span class="err">|</span> <span class="err">"location"</span> <span class="err">|</span> <span class="err">"mediaPlayback"</span> <span class="err">|</span>
+                                        <span class="err">"mediaProjection"</span> <span class="err">|</span> <span class="err">"microphone"</span> <span class="err">|</span> <span class="err">"phoneCall"]</span>
+         <span class="na">android:icon=</span><span class="s">"drawable resource"</span>
+         <span class="na">android:isolatedProcess=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+         <span class="na">android:label=</span><span class="s">"string resource"</span>
+         <span class="na">android:name=</span><span class="s">"string"</span>
+         <span class="na">android:permission=</span><span class="s">"string"</span>
+         <span class="na">android:process=</span><span class="s">"string"</span> <span class="nt">&gt;</span>
+    . . .
+<span class="nt">&lt;/service&gt;</span>
+</code></pre></div></div>
+<p>A tag <code class="language-plaintext highlighter-rouge">&lt;provider ...&gt;</code> contém os content providers. Um ponto interessante desta tag, é o parâmetro <code class="language-plaintext highlighter-rouge">exported</code>, pois se estiver marcado como <code class="language-plaintext highlighter-rouge">true</code>, isso significa que aplicações externas podem interagir com ele. Sua sintaxe é desta forma:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;provider</span> <span class="na">android:authorities=</span><span class="s">"list"</span>
+          <span class="na">android:directBootAware=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:enabled=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:exported=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:grantUriPermissions=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:icon=</span><span class="s">"drawable resource"</span>
+          <span class="na">android:initOrder=</span><span class="s">"integer"</span>
+          <span class="na">android:label=</span><span class="s">"string resource"</span>
+          <span class="na">android:multiprocess=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:name=</span><span class="s">"string"</span>
+          <span class="na">android:permission=</span><span class="s">"string"</span>
+          <span class="na">android:process=</span><span class="s">"string"</span>
+          <span class="na">android:readPermission=</span><span class="s">"string"</span>
+          <span class="na">android:syncable=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:writePermission=</span><span class="s">"string"</span> <span class="nt">&gt;</span>
+    . . .
+<span class="nt">&lt;/provider&gt;</span>
+</code></pre></div></div>
+
+<p>A tag receiver contém os broadcast receivers, esta tag mostra todas as permissões que a applicação tem para receber informações sistêmicas e de outras aplicações. Sua sintaxe é:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;receiver</span> <span class="na">android:directBootAware=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:enabled=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:exported=</span><span class="s">["true"</span> <span class="err">|</span> <span class="err">"false"]</span>
+          <span class="na">android:icon=</span><span class="s">"drawable resource"</span>
+          <span class="na">android:label=</span><span class="s">"string resource"</span>
+          <span class="na">android:name=</span><span class="s">"string"</span>
+          <span class="na">android:permission=</span><span class="s">"string"</span>
+          <span class="na">android:process=</span><span class="s">"string"</span> <span class="nt">&gt;</span>
+    . . .
+<span class="nt">&lt;/receiver&gt;</span>
+</code></pre></div></div>
+
+<h1 id="intents-e-intent-filters">INTENTS E INTENT FILTERS</h1>
+
+<p>Os <code class="language-plaintext highlighter-rouge">intents</code> são um recurso da aplicação que fornece um meio de comunicação com outros recursos do dispsitivo. De forma análoga ao nome, o intent expressa uma “intenção” de utilização de recursos do dispositivo.</p>
+
+<p>Uma intent pode ser usada para chamar uma outra activity, um serviço pra rodar em background ou para entregar um recurso via broadcast.</p>
+
+<p>Para realizar sua tarefa, os intents pordem utilizar vários mecanismos, por exemplo, chamar outra activity pode ser feito com <code class="language-plaintext highlighter-rouge">startActivity()</code> ou <code class="language-plaintext highlighter-rouge">startActivityForResult()</code> passando como argumento o intent, fazendo com que a aplicação abra uma novo recurso para interagir com o usuário. Pode iniciar um serviço com <code class="language-plaintext highlighter-rouge">startService()</code> ou <code class="language-plaintext highlighter-rouge">bindService()</code> passando como argumento a intent para iniciar um novo serviço. Ou entregar uma mensagem via broadcast, passando a intent como argumento para <code class="language-plaintext highlighter-rouge">sendBroadcast()</code>.</p>
+
+<p>Existem dois tipos de intents:</p>
+
+<ul>
+  <li><strong>Explicit Intents</strong>: São intents que especificam qual aplicação irá receber o intent, esta aplicação alvo pode ser a própria aplicação que está chamando o intent ou aplicações deiferentes. Geralmente utilizado para chamar uma nova activity na própria aplicação.</li>
+  <li><strong>Implicit Intents</strong>: São intents das quais não se especifica qual aplicação irá receber este intent, ao invés disso a ação é declarada. Desta forma, a aplicação vai passar este intent para o Android, e o próprio Android vai procurar um candidato a receber. Como exemplo, um aplicativo que vai compartilhar uma foto, inicia um Implicit Intent e o Android vai procurar todas as oitras aplicações que aceitam receber este compartilhamento.</li>
+</ul>
+
+<p>A imagem abaixo mostra o fluxo de comunicação de uma intent:</p>
+
+<p><img src="/img/posts/mobile-08.png" alt="Fluxo da intent" title="Fluxo da intent" /></p>
+
+<p>Neste fluxo, a <code class="language-plaintext highlighter-rouge">Activity A</code> de uma aplicação está passando sua intent através do <code class="language-plaintext highlighter-rouge">startActivity()</code> para o Android. O Android por sua vez, vai verificar se esta intent é específica para uma plicação, no caso de <code class="language-plaintext highlighter-rouge">explicit intent</code> ou se a intent é uma ação <code class="language-plaintext highlighter-rouge">implicit intent</code>, neste caso o Android vai varrer o sistema por aplicações que possam satisfazer a requisição feita e enviar o <code class="language-plaintext highlighter-rouge">onCreate()</code> para ela.</p>
+
+<p>Uma intent possui as seguintes propriedades:</p>
+
+<ul>
+  <li><strong>Component Name</strong>: O nome do componente que será acessado, pode ser o nome do pacote de uma aplicação ou uma activity específica;</li>
+  <li><strong>Action</strong>: Representa qual a intenção enviada, pode ser enviar uma mensagem, ou ver uma tela, entre outros;</li>
+  <li><strong>Data</strong>: Contém a URI dos dados que serão passados para o componente que receberá este intent;</li>
+  <li><strong>Category</strong>: Fornece informações adicionais para o componente que receberá este intent;</li>
+  <li><strong>Extras</strong>: Algumas Activities precisam de parâmetros extras para seu funcionamento, e esta propriedade armazena tais informações.</li>
+</ul>
+
+<p>O código abaixo mostra uma Explicit Intent em <code class="language-plaintext highlighter-rouge">JAVA</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Intent</span> <span class="n">downloadIntent</span> <span class="o">=</span> <span class="k">new</span><span class="o">.</span><span class="na">Intent</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="nc">DownloadService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+<span class="n">downloadIntent</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="nc">Uri</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="n">fileUrl</span><span class="o">));</span>
+<span class="n">startService</span><span class="o">(</span><span class="n">downloadIntent</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>O objetivo deste intent de exemplo, é fazer o download de um contúdo. Para isso é criado um objeto do tipo Intent, é passado como Data a URI do conteúdo a ser baixado e por fim chama o <code class="language-plaintext highlighter-rouge">startService()</code> chamando este objeto.</p>
+
+<p>O código abaixo, mostra uma Implicit Intent em <code class="language-plaintext highlighter-rouge">JAVA</code></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Cria a mensagem como uma string</span>
+<span class="nc">Intent</span> <span class="n">sendIntent</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Intent</span><span class="o">();</span>
+<span class="n">sendIntent</span><span class="o">.</span><span class="na">setAction</span><span class="o">(</span><span class="nc">Intent</span><span class="o">.</span><span class="na">ACTION_SEND</span><span class="o">);</span>
+<span class="n">sendIntent</span><span class="o">.</span><span class="na">putExtra</span><span class="o">(</span><span class="nc">Intent</span><span class="o">.</span><span class="na">EXTRA_TEXT</span><span class="o">,</span> <span class="n">textMessage</span><span class="o">);</span>
+<span class="n">sendIntent</span><span class="o">.</span><span class="na">setType</span><span class="o">(</span><span class="s">"text/plain"</span><span class="o">);</span>
+
+<span class="c1">// Verifica se a intent será resolvida para uma aplicação</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">sendIntent</span><span class="o">.</span><span class="na">resolveActivity</span><span class="o">(</span><span class="n">getPackageManager</span><span class="o">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">startActivity</span><span class="o">(</span><span class="n">sendIntent</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Neste caso, quando o <code class="language-plaintext highlighter-rouge">startActivity()</code> é chamado, o Android vai varrer o sistema por uma aplicação que exporte uma intent do tipo <code class="language-plaintext highlighter-rouge">ACTION_SEND</code> e devolver para o usuário escolher para qual aplicação quer exportar o texto.</p>
+
+<p>Este processo mostrou como uma intent é enviada e como se comunica com o sistema, porém o outro lado da comunicação precisa <code class="language-plaintext highlighter-rouge">declarar</code> que pode receber uma intent.</p>
+
+<p>Uma aplicação define quais os tipos de intent pode receber, através dos <code class="language-plaintext highlighter-rouge">intent filters</code> que fica dentro dos componentes no AndroidManifest.xml.<br />
+Esta flag leva em consideração os elementos <code class="language-plaintext highlighter-rouge">action</code>, <code class="language-plaintext highlighter-rouge">data</code> e <code class="language-plaintext highlighter-rouge">category</code> que já vimos anteriormente. Sia sintaxe segue desta forma:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;intent-filter</span> <span class="na">android:icon=</span><span class="s">"drawable resource"</span>
+               <span class="na">android:label=</span><span class="s">"string resource"</span>
+               <span class="na">android:priority=</span><span class="s">"integer"</span> <span class="nt">&gt;</span>
+    . . .
+<span class="nt">&lt;/intent-filter&gt;</span>
+</code></pre></div></div>
+
+<h1 id="conclusão">CONCLUSÃO</h1>
+
+<p>Neste artigo, foi possível obter um overview da anatomia de uma aplicação Android, nos próximos artigos exploraremos algumas ferramentas e técnicas pera o pentest nestas aplicações.</p>
+
