@@ -11,6 +11,8 @@
 <!-- `site.alt_lang` can specify a language different from the UI -->
 <html lang="en"
   
+    data-mode="light"
+  
 >
 
   <!--
@@ -36,24 +38,24 @@
   
     <!-- Begin Jekyll SEO tag v2.8.0 -->
 <meta name="generator" content="Jekyll v4.3.2" />
-<meta property="og:title" content="Chirpy" />
+<meta property="og:title" content="Inaciot" />
 <meta property="og:locale" content="en" />
 <meta name="description" content="A minimal, responsive, and powerful Jekyll theme for presenting professional writing." />
 <meta property="og:description" content="A minimal, responsive, and powerful Jekyll theme for presenting professional writing." />
 <link rel="canonical" href="http://localhost:4000/" />
 <meta property="og:url" content="http://localhost:4000/" />
-<meta property="og:site_name" content="Chirpy" />
+<meta property="og:site_name" content="Inaciot" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Chirpy" />
-<meta name="twitter:site" content="@twitter_username" />
+<meta property="twitter:title" content="Inaciot" />
+<meta name="twitter:site" content="@inaciot" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","description":"A minimal, responsive, and powerful Jekyll theme for presenting professional writing.","headline":"Chirpy","name":"your_full_name","sameAs":["https://twitter.com/username","https://github.com/username"],"url":"http://localhost:4000/"}</script>
+{"@context":"https://schema.org","@type":"WebSite","description":"A minimal, responsive, and powerful Jekyll theme for presenting professional writing.","headline":"Inaciot","name":"inaciot","sameAs":["https://twitter.com/username","https://github.com/username"],"url":"http://localhost:4000/"}</script>
 <!-- End Jekyll SEO tag -->
 
   
 
-  <title>Chirpy
+  <title>Inaciot
   </title>
 
   <!--
@@ -68,8 +70,8 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png">
 <link rel="manifest" href="/assets/img/favicons/site.webmanifest">
 <link rel="shortcut icon" href="/assets/img/favicons/favicon.ico">
-<meta name="apple-mobile-web-app-title" content="Chirpy">
-<meta name="application-name" content="Chirpy">
+<meta name="apple-mobile-web-app-title" content="Inaciot">
+<meta name="application-name" content="Inaciot">
 <meta name="msapplication-TileColor" content="#da532c">
 <meta name="msapplication-config" content="/assets/img/favicons/browserconfig.xml">
 <meta name="theme-color" content="#ffffff">
@@ -115,137 +117,6 @@
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.min.js"></script>
 
   
-    <!--
-  Switch the mode between dark and light.
--->
-
-<script type="text/javascript">
-  class ModeToggle {
-    static get MODE_KEY() { return "mode"; }
-    static get MODE_ATTR() { return "data-mode"; }
-    static get DARK_MODE() { return "dark"; }
-    static get LIGHT_MODE() { return "light"; }
-    static get ID() { return "mode-toggle"; }
-
-    constructor() {
-      if (this.hasMode) {
-        if (this.isDarkMode) {
-          if (!this.isSysDarkPrefer) {
-            this.setDark();
-          }
-        } else {
-          if (this.isSysDarkPrefer) {
-            this.setLight();
-          }
-        }
-      }
-
-      let self = this;
-
-      /* always follow the system prefers */
-      this.sysDarkPrefers.addEventListener("change", () => {
-        if (self.hasMode) {
-          if (self.isDarkMode) {
-            if (!self.isSysDarkPrefer) {
-              self.setDark();
-            }
-
-          } else {
-            if (self.isSysDarkPrefer) {
-              self.setLight();
-            }
-          }
-
-          self.clearMode();
-        }
-
-        self.notify();
-
-      });
-
-    } /* constructor() */
-
-    get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); }
-
-    get isSysDarkPrefer() { return this.sysDarkPrefers.matches; }
-
-    get isDarkMode() { return this.mode === ModeToggle.DARK_MODE; }
-
-    get isLightMode() { return this.mode === ModeToggle.LIGHT_MODE; }
-
-    get hasMode() { return this.mode != null; }
-
-    get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); }
-
-    /* get the current mode on screen */
-    get modeStatus() {
-      if (this.isDarkMode
-        || (!this.hasMode && this.isSysDarkPrefer)) {
-        return ModeToggle.DARK_MODE;
-      } else {
-        return ModeToggle.LIGHT_MODE;
-      }
-    }
-
-    setDark() {
-      $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.DARK_MODE);
-      sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE);
-    }
-
-    setLight() {
-      $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.LIGHT_MODE);
-      sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE);
-    }
-
-    clearMode() {
-      $('html').removeAttr(ModeToggle.MODE_ATTR);
-      sessionStorage.removeItem(ModeToggle.MODE_KEY);
-    }
-
-    /* Notify another plugins that the theme mode has changed */
-    notify() {
-      window.postMessage({
-        direction: ModeToggle.ID,
-        message: this.modeStatus
-      }, "*");
-    }
-
-  } /* ModeToggle */
-
-  const toggle = new ModeToggle();
-
-  function flipMode() {
-    if (toggle.hasMode) {
-      if (toggle.isSysDarkPrefer) {
-        if (toggle.isLightMode) {
-          toggle.clearMode();
-        } else {
-          toggle.setLight();
-        }
-
-      } else {
-        if (toggle.isDarkMode) {
-          toggle.clearMode();
-        } else {
-          toggle.setDark();
-        }
-      }
-
-    } else {
-      if (toggle.isSysDarkPrefer) {
-        toggle.setLight();
-      } else {
-        toggle.setDark();
-      }
-    }
-
-    toggle.notify();
-
-  } /* flipMode() */
-
-</script>
-
-  
 </head>
 
 
@@ -261,13 +132,13 @@
       <a href="/" class="mx-auto">
         
           
-          <img src="https://inacioti.github.io/img/avatar.png" alt="avatar" onerror="this.style.display='none'">
+          <img src="/img/avatar.png" alt="avatar" onerror="this.style.display='none'">
         
       </a>
     </div>
 
     <div class="site-title">
-      <a href="/">Chirpy</a>
+      <a href="/">Inaciot</a>
     </div>
     <div class="site-subtitle font-italic">Pentester & Cyber Threat Intelligence</div>
 
@@ -326,20 +197,12 @@
   <div class="sidebar-bottom mt-auto d-flex flex-wrap justify-content-center align-items-center">
 
     
-      <button class="mode-toggle btn" aria-label="Switch Mode">
-        <i class="fas fa-adjust"></i>
-      </button>
-
-      
-        <span class="icon-border"></span>
-      
-    
 
     
       
 
       
-      <a href="https://github.com/github_username" aria-label="github"
+      <a href="https://github.com/inacioti" aria-label="github"
         
 
         
@@ -359,7 +222,7 @@
       
 
       
-      <a href="https://twitter.com/twitter_username" aria-label="twitter"
+      <a href="https://twitter.com/inaciot" aria-label="twitter"
         
 
         
@@ -379,7 +242,7 @@
       
 
       
-      <a href="javascript:location.href = 'mailto:' + ['example','domain.com'].join('@')" aria-label="email"
+      <a href="javascript:location.href = 'mailto:' + ['jose.inaciot','outlook.com'].join('@')" aria-label="email"
         
 
         
@@ -437,7 +300,7 @@
     <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i>
 
     <div id="topbar-title">
-      Chirpy
+      Inaciot
     </div>
 
     <i id="search-trigger" class="fas fa-search fa-fw"></i>
@@ -500,7 +363,7 @@
 
   <div class="post-preview">
     <h1>
-      <a href="/posts/getting-started/">Getting Started</a>
+      <a href="/posts/2022-26-04-Threat-Hunting/"></a>
     </h1>
 
     <div class="post-content">
@@ -511,13 +374,7 @@
 
 
 
-        Prerequisites
-
-Follow the instructions in the Jekyll Docs to complete the installation of Ruby, RubyGems, Jekyll, and Bundler. In addition, Git is also required to be installed.
-
-Installation
-
-Crea...
+        Sabemos que o monitoramento desempenha um papel crucial na detecção e análise atividades maliciosas em um sistema. Com isso, resolvi criar esse laboratório para estudo pessoal com o intuito de moni...
       </p>
     </div>
 
@@ -536,30 +393,18 @@ Crea...
 
 
 <em class=""
-    data-ts="1565355300"
+    data-ts="1675882955"
     data-df="ll"
     >
-  Aug  9, 2019
+  Feb  8, 2023
 </em>
 
 
         <!-- categories -->
         
-          <i class="far fa-folder-open fa-fw"></i>
-          <span>
-          
-            Blogging,
-            Tutorial
-          </span>
-        
 
       </div>
 
-      
-      <div class="pin">
-        <i class="fas fa-thumbtack fa-fw"></i>
-        <span>Pinned</span>
-      </div>
       
 
     </div> <!-- .post-meta -->
@@ -570,7 +415,7 @@ Crea...
 
   <div class="post-preview">
     <h1>
-      <a href="/posts/enable-google-pv/">Enable Google Page Views</a>
+      <a href="/posts/2019-08-09-Threat-hunting-with-ELK-Detectando-Eventos-do-Windows/"></a>
     </h1>
 
     <div class="post-content">
@@ -581,8 +426,7 @@ Crea...
 
 
 
-        
-  The content of this post applies only to Universal Analytics property (UA), not Google Analytics 4 (GA 4). In addition, since UA is about to be deprecated on Jul 1, 2023, the Page Views feature ...
+        Sabemos que o monitoramento desempenha um papel crucial na detecção e análise atividades maliciosas em um sistema. Com isso, resolvi criar esse laboratório para estudo pessoal com o intuito de moni...
       </p>
     </div>
 
@@ -601,10 +445,64 @@ Crea...
 
 
 <em class=""
-    data-ts="1609716720"
+    data-ts="1675882955"
     data-df="ll"
     >
-  Jan  4, 2021
+  Feb  8, 2023
+</em>
+
+
+        <!-- categories -->
+        
+
+      </div>
+
+      
+
+    </div> <!-- .post-meta -->
+
+  </div> <!-- .post-review -->
+
+
+
+  <div class="post-preview">
+    <h1>
+      <a href="/posts/Hardening-Windows-Server/">Hardening Windows Server</a>
+    </h1>
+
+    <div class="post-content">
+      <p>
+        
+
+
+
+
+
+        Neste meu primeiro artigo, abordarei um termo revisado recentemente de um curso ao qual estou, Server Hardening.
+
+Sendo bem simplista, Hardening seria um conjunto de processos de reforço de seguran...
+      </p>
+    </div>
+
+    <div class="post-meta text-muted d-flex">
+      <div class="mr-auto">
+
+        <!-- posted date -->
+        <i class="far fa-calendar fa-fw"></i>
+        <!--
+  Date format snippet
+  See: ${JS_ROOT}/utils/locale-dateime.js
+-->
+
+
+
+
+
+<em class=""
+    data-ts="1670122800"
+    data-df="ll"
+    >
+  Dec  4, 2022
 </em>
 
 
@@ -613,7 +511,7 @@ Crea...
           <i class="far fa-folder-open fa-fw"></i>
           <span>
           
-            Blogging,
+            Papers,
             Tutorial
           </span>
         
@@ -663,7 +561,7 @@ Crea...
     data-ts="1565454840"
     data-df="ll"
     >
-  Aug 11, 2019
+  Aug 10, 2019
 </em>
 
 
@@ -735,74 +633,6 @@ Naming and...
           
             Blogging,
             Tutorial
-          </span>
-        
-
-      </div>
-
-      
-
-    </div> <!-- .post-meta -->
-
-  </div> <!-- .post-review -->
-
-
-
-  <div class="post-preview">
-    <h1>
-      <a href="/posts/text-and-typography/">Text and Typography</a>
-    </h1>
-
-    <div class="post-content">
-      <p>
-        
-
-
-
-
-
-        This post is to show Markdown syntax rendering on Chirpy, you can also use it as an example of writing. Now, let’s start looking at text and typography.
-
-Titles
-
-
-H1 - heading
-
-H2 - heading
-
-H3 - h...
-      </p>
-    </div>
-
-    <div class="post-meta text-muted d-flex">
-      <div class="mr-auto">
-
-        <!-- posted date -->
-        <i class="far fa-calendar fa-fw"></i>
-        <!--
-  Date format snippet
-  See: ${JS_ROOT}/utils/locale-dateime.js
--->
-
-
-
-
-
-<em class=""
-    data-ts="1565235180"
-    data-df="ll"
-    >
-  Aug  8, 2019
-</em>
-
-
-        <!-- categories -->
-        
-          <i class="far fa-folder-open fa-fw"></i>
-          <span>
-          
-            Blogging,
-            Demo
           </span>
         
 
@@ -909,27 +739,12 @@ H3 - h...
         
         
         
-      <li><a href="/posts/text-and-typography/">Text and Typography</a></li>
-      
-        
-        
-        
       <li><a href="/posts/write-a-new-post/">Writing a New Post</a></li>
       
         
         
         
-      <li><a href="/posts/getting-started/">Getting Started</a></li>
-      
-        
-        
-        
       <li><a href="/posts/customize-the-favicon/">Customize the Favicon</a></li>
-      
-        
-        
-        
-      <li><a href="/posts/enable-google-pv/">Enable Google Page Views</a></li>
       
     </ul>
   </div> <!-- #access-lastmod -->
@@ -1030,87 +845,6 @@ H3 - h...
         
         
 
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-        
-        
-
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-        
-        
-
 
 
   <div id="access-tags">
@@ -1122,16 +856,10 @@ H3 - h...
       <a class="post-tag" href="/tags/favicon/">favicon</a>
     
       
-      <a class="post-tag" href="/tags/getting-started/">getting started</a>
+      <a class="post-tag" href="/tags/hardening/">Hardening</a>
     
       
-      <a class="post-tag" href="/tags/google-analytics/">google analytics</a>
-    
-      
-      <a class="post-tag" href="/tags/pageviews/">pageviews</a>
-    
-      
-      <a class="post-tag" href="/tags/typography/">typography</a>
+      <a class="post-tag" href="/tags/windows/">Windows</a>
     
       
       <a class="post-tag" href="/tags/writing/">writing</a>
@@ -1253,87 +981,6 @@ H3 - h...
         
         
 
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-        
-        
-
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-    
-  
-    
-    
-    
-    
-      
-        
-        
-
 
 
   <div id="access-tags">
@@ -1345,16 +992,10 @@ H3 - h...
       <a class="post-tag" href="/tags/favicon/">favicon</a>
     
       
-      <a class="post-tag" href="/tags/getting-started/">getting started</a>
+      <a class="post-tag" href="/tags/hardening/">Hardening</a>
     
       
-      <a class="post-tag" href="/tags/google-analytics/">google analytics</a>
-    
-      
-      <a class="post-tag" href="/tags/pageviews/">pageviews</a>
-    
-      
-      <a class="post-tag" href="/tags/typography/">typography</a>
+      <a class="post-tag" href="/tags/windows/">Windows</a>
     
       
       <a class="post-tag" href="/tags/writing/">writing</a>
@@ -1380,7 +1021,7 @@ H3 - h...
       <div class="footer-left">
         <p class="mb-0">
           © 2023
-          <a href="https://twitter.com/username">your_full_name</a>.
+          <a href="https://twitter.com/username">inaciot</a>.
           
           <span data-toggle="tooltip" data-placement="top"
             title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span>

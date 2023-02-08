@@ -23,9 +23,11 @@ const resource = [
     /* --- Favicons & compressed JS --- */
     
     
+        '/assets/img/favicons/android-chrome-192x192-bkp.png',
         '/assets/img/favicons/android-chrome-192x192.png',
         '/assets/img/favicons/android-chrome-512x512.png',
         '/assets/img/favicons/apple-touch-icon.png',
+        '/assets/img/favicons/favicon-16x16-bkp.png',
         '/assets/img/favicons/favicon-16x16.png',
         '/assets/img/favicons/favicon-32x32.png',
         '/assets/img/favicons/favicon.ico',
@@ -45,8 +47,6 @@ const allowedDomains = [
 
     'localhost:4000',
 
-    
-        'chirpy-img.netlify.app',
     
 
     'fonts.gstatic.com',

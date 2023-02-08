@@ -38,27 +38,27 @@
   
     <!-- Begin Jekyll SEO tag v2.8.0 -->
 <meta name="generator" content="Jekyll v4.3.2" />
-<meta property="og:title" content="Customize the Favicon" />
-<meta name="author" content="Cotes Chung" />
+<meta property="og:title" content="Hardening Windows Server" />
+<meta name="author" content="Inácio" />
 <meta property="og:locale" content="en" />
-<meta name="description" content="The favicons of Chirpy are placed in the directory assets/img/favicons/. You may want to replace them with your own. The following sections will guide you to create and replace the default favicons." />
-<meta property="og:description" content="The favicons of Chirpy are placed in the directory assets/img/favicons/. You may want to replace them with your own. The following sections will guide you to create and replace the default favicons." />
-<link rel="canonical" href="http://localhost:4000/posts/customize-the-favicon/" />
-<meta property="og:url" content="http://localhost:4000/posts/customize-the-favicon/" />
+<meta name="description" content="Neste meu primeiro artigo, abordarei um termo revisado recentemente de um curso ao qual estou, Server Hardening." />
+<meta property="og:description" content="Neste meu primeiro artigo, abordarei um termo revisado recentemente de um curso ao qual estou, Server Hardening." />
+<link rel="canonical" href="http://localhost:4000/posts/Hardening-Windows-Server/" />
+<meta property="og:url" content="http://localhost:4000/posts/Hardening-Windows-Server/" />
 <meta property="og:site_name" content="Inaciot" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2019-08-10T13:34:00-03:00" />
+<meta property="article:published_time" content="2022-12-04T00:00:00-03:00" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Customize the Favicon" />
+<meta property="twitter:title" content="Hardening Windows Server" />
 <meta name="twitter:site" content="@inaciot" />
-<meta name="twitter:creator" content="@cotes2020" />
+<meta name="twitter:creator" content="@Inácio" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Cotes Chung","url":"https://github.com/cotes2020/"},"dateModified":"2023-02-08T11:05:49-03:00","datePublished":"2019-08-10T13:34:00-03:00","description":"The favicons of Chirpy are placed in the directory assets/img/favicons/. You may want to replace them with your own. The following sections will guide you to create and replace the default favicons.","headline":"Customize the Favicon","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/posts/customize-the-favicon/"},"url":"http://localhost:4000/posts/customize-the-favicon/"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Inácio"},"dateModified":"2022-12-04T00:00:00-03:00","datePublished":"2022-12-04T00:00:00-03:00","description":"Neste meu primeiro artigo, abordarei um termo revisado recentemente de um curso ao qual estou, Server Hardening.","headline":"Hardening Windows Server","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/posts/Hardening-Windows-Server/"},"url":"http://localhost:4000/posts/Hardening-Windows-Server/"}</script>
 <!-- End Jekyll SEO tag -->
 
   
 
-  <title>Customize the Favicon | Inaciot
+  <title>Hardening Windows Server | Inaciot
   </title>
 
   <!--
@@ -319,7 +319,7 @@
         
 
           
-            <span>Customize the Favicon</span>
+            <span>Hardening Windows Server</span>
           
 
         
@@ -430,18 +430,6 @@
       
 
     
-      
-
-      
-      
-
-      
-      
-      
-
-      
-
-    
 
     
 
@@ -467,7 +455,7 @@
 
 <!-- return -->
 
-<h1 data-toc-skip>Customize the Favicon</h1>
+<h1 data-toc-skip>Hardening Windows Server</h1>
 
 <div class="post-meta text-muted">
     <!-- published date -->
@@ -483,35 +471,15 @@
 
 
 <em class=""
-    data-ts="1565454840"
+    data-ts="1670122800"
     data-df="ll"
     data-toggle="tooltip" data-placement="bottom">
-  Aug 10, 2019
+  Dec  4, 2022
 </em>
 
     </span>
 
     <!-- lastmod date -->
-    
-    <span>
-      Updated
-      <!--
-  Date format snippet
-  See: ${JS_ROOT}/utils/locale-dateime.js
--->
-
-
-
-
-
-<em class=""
-    data-ts="1675865149"
-    data-df="ll"
-    data-toggle="tooltip" data-placement="bottom">
-  Feb  8, 2023
-</em>
-
-    </span>
     
 
   
@@ -526,7 +494,7 @@
       <em>
       
         
-          <a href="https://github.com/cotes2020/">Cotes Chung</a>
+          <a href=""></a>
           
         
       
@@ -557,8 +525,8 @@
 
 <!-- return element -->
 <span class="readtime" data-toggle="tooltip" data-placement="bottom"
-  title="212 words">
-  <em>1 min</em> read</span>
+  title="1064 words">
+  <em>5 min</em> read</span>
 
     </div>
 
@@ -567,54 +535,130 @@
 </div> <!-- .post-meta -->
 
 <div class="post-content">
-  <p>The <a href="https://www.favicon-generator.org/about/">favicons</a> of <a href="https://github.com/cotes2020/jekyll-theme-chirpy/"><strong>Chirpy</strong></a> are placed in the directory <code class="language-plaintext filepath highlighter-rouge">assets/img/favicons/</code>. You may want to replace them with your own. The following sections will guide you to create and replace the default favicons.</p>
+  <p>Neste meu primeiro artigo, abordarei um termo revisado recentemente de um curso ao qual estou, Server Hardening.</p>
 
-<h2 id="generate-the-favicon"><span class="mr-2">Generate the favicon</span><a href="#generate-the-favicon" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2>
+<p>Sendo bem simplista, Hardening seria um conjunto de processos de reforço de segurança aplicadas ao sistema. A realização de hardening em sistemas não é apenas uma boa prática, em algumas áreas pode ser uma exigência regulamentar, o objetivo é minimizar os riscos à segurança.</p>
 
-<p>Prepare a square image (PNG, JPG, or SVG) with a size of 512x512 or more, and then go to the online tool <a href="https://realfavicongenerator.net/"><strong>Real Favicon Generator</strong></a> and click the button <kbd>Select your Favicon image</kbd> to upload your image file.</p>
+<p>A ISO/IEC 27002 é uma das normas componentes da série ISO/IEC 27000 que mais abrangem aos processos de hardening. Apresentando um conjunto de boas práticas, para justamente estabelecer controles de segurança da informação.</p>
 
-<p>In the next step, the webpage will show all usage scenarios. You can keep the default options, scroll to the bottom of the page, and click the button <kbd>Generate your Favicons and HTML code</kbd> to generate the favicon.</p>
+<p>Os Benchmarks do CIS são um recurso abrangente de documentos que abrangem muitos sistemas operacionais e aplicativos.</p>
 
-<h2 id="download--replace"><span class="mr-2">Download &amp; Replace</span><a href="#download--replace" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2>
+<p>Para sistemas Windows, a Microsoft publica linhas de base e ferramentas de segurança para verificar a conformidade dos sistemas em relação a eles.</p>
 
-<p>Download the generated package, unzip and delete the following two from the extracted files:</p>
+<p>OpenSCAP para sistemas Linux. que fornece ferramentas de código aberto para identificar e corrigir problemas de segurança.</p>
+
+<p>Neste pequeno artigo iremos focar no Hardening do Windows Server, que envolve identificar e remediar vulnerabilidades de segurança.</p>
+
+<p>Aqui estão algumas práticas de Hardening do Windows Server. Lembre-se é somente um ponto de partida, deve-se revisar e alterar de acordo com as necessidades da organização.</p>
+
+<h2 data-toc-skip="">Segurança Organizacional</h2>
 
 <ul>
-  <li><code class="language-plaintext filepath highlighter-rouge">browserconfig.xml</code></li>
-  <li><code class="language-plaintext filepath highlighter-rouge">site.webmanifest</code></li>
+  <li>Mantenha um registro de inventário para cada servidor.</li>
+  <li>Teste minuciosamente e valide cada alteração proposta para hardware ou software do servidor antes de fazer a mudança no ambiente de produção.</li>
+  <li>Realizar regularmente uma avaliação de risco.</li>
 </ul>
 
-<p>And then copy the remaining image files (<code class="language-plaintext filepath highlighter-rouge">.PNG</code> and <code class="language-plaintext filepath highlighter-rouge">.ICO</code>) to cover the original files in the directory <code class="language-plaintext filepath highlighter-rouge">assets/img/favicons/</code> of your Jekyll site. If your Jekyll site doesn’t have this directory yet, just create one.</p>
+<h2 data-toc-skip="">Preparação do servidor do Windows</h2>
 
-<p>The following table will help you understand the changes to the favicon files:</p>
+<ul>
+  <li>Defina uma senha de BIOS/firmware para evitar alterações não autorizadas nas configurações de inicialização do servidor.</li>
+  <li>Desabilitar a logon administrativa automática no console de recuperação.</li>
+  <li>Configure a ordem de inicialização do dispositivo para evitar a inicialização não autorizada de mídia alternativa.</li>
+</ul>
 
-<div class="table-wrapper"><table>
-  <thead>
-    <tr>
-      <th>File(s)</th>
-      <th style="text-align: center">From Online Tool</th>
-      <th style="text-align: center">From Chirpy</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code class="language-plaintext highlighter-rouge">*.PNG</code></td>
-      <td style="text-align: center">✓</td>
-      <td style="text-align: center">✗</td>
-    </tr>
-    <tr>
-      <td><code class="language-plaintext highlighter-rouge">*.ICO</code></td>
-      <td style="text-align: center">✓</td>
-      <td style="text-align: center">✗</td>
-    </tr>
-  </tbody>
-</table></div>
+<h2 data-toc-skip="">Instalação do servidor Windows</h2>
 
-<blockquote class="prompt-info">
-  <p>✓ means keep, ✗ means delete.</p>
-</blockquote>
+<ul>
+  <li>Certifique-se de que todos os patches, hotfixes e pacotes de serviço apropriados sejam aplicados prontamente.</li>
+  <li>Depois de instalar o Windows Server, atualize-o imediatamente com os patches mais recentes via WSUS ou SCCM. (Os patches de segurança resolvem vulnerabilidades conhecidas que os atacantes poderiam explorar para comprometer um sistema.)</li>
+  <li>Habilite a notificação automática da disponibilidade do patch. Sempre que um patch é liberado, ele deve ser analisado, testado e aplicado em tempo hábil usando WSUS ou SCCM.</li>
+</ul>
 
-<p>The next time you build the site, the favicon will be replaced with a customized edition.</p>
+<h2 data-toc-skip="">Segurança da conta de usuário</h2>
+
+<ul>
+  <li>Certifique-se de que suas senhas administrativas e do sistema atendam às melhores práticas de senha.</li>
+  <li>Certifique-se de que todas as senhas sejam alteradas a cada 90 dias.</li>
+  <li>Proibir os usuários de criar e fazer login com contas Microsoft.</li>
+  <li>Desabilitar a conta do convidado.</li>
+  <li>Não permita que permissões “todos” se apliquem a usuários anônimos.</li>
+  <li>Não permita a enumeração anônima de contas e ações SAM.</li>
+  <li>Desativar a tradução anônima SID/Name.</li>
+  <li>Desabilitar ou excluir prontamente contas de usuário não usadas.</li>
+</ul>
+
+<h2 data-toc-skip="">Configuração de segurança de rede</h2>
+
+<ul>
+  <li>Habilite o firewall do Windows em todos os perfis (domínio, privado, público) e configure-o para bloquear o tráfego de entrada por padrão.</li>
+  <li>Execute o bloqueio da porta no nível de configuração da rede.</li>
+  <li>Restringir a capacidade de acessar cada computador da rede apenas para usuários autenticados.</li>
+  <li>Se o RDP for utilizado, defina o nível de criptografia de conexão RDP para alto.</li>
+  <li>Remova a ativação do LMhosts lookup.</li>
+  <li>Desabilitar o NetBIOS no TCP/IP.</li>
+  <li>Remova ncacn_ip_tcp.</li>
+  <li>Configure tanto o Microsoft Network Client quanto o Microsoft Network Server para sempre assinar comunicações digitalmente.</li>
+  <li>Desativar o envio de senhas não criptografadas para servidores SMB de terceiros.</li>
+  <li>Permita que o Sistema Local use a identidade do computador para NTLM.</li>
+  <li>Configure tipos de criptografia permitidos para Kerberos.</li>
+  <li>Não armazene os valores de hash do LAN Manager.</li>
+  <li>Defina o nível de autenticação do LAN Manager para permitir apenas NTLMv2 e recusar LM e NTLM.</li>
+  <li>Remova o compartilhamento de arquivos e impressões das configurações da rede. O compartilhamento de arquivos e impressões pode permitir que qualquer pessoa se conecte a um servidor e acesse dados críticos sem exigir um ID ou senha do usuário.</li>
+</ul>
+
+<h2 data-toc-skip="">Configuração de segurança do registro</h2>
+
+<p>Certifique-se de que todos os administradores aproveitem o tempo para entender completamente como funciona o registro e o propósito de cada uma de suas várias chaves. Muitas das vulnerabilidades no sistema operacional Windows podem ser corrigidas alterando chaves específicas, conforme exemplos abaixo.</p>
+
+<ul>
+  <li>Defina o AutoShareServer para 0.</li>
+  <li>Defina AutoShareWks para 0.</li>
+</ul>
+
+<p>Isso desabilitaria os compartilhamentos administrativos (ou seja: o compartilhamento c$ oculto).</p>
+
+<ul>
+  <li>Exclua todos os dados de valor DENTRO da tecla NullSessionPipes.</li>
+  <li>Exclua todos os dados de valor DENTRO da tecla NullSessionShares.</li>
+</ul>
+
+<p>Isso remove o acesso de NullSessions. Entre outras coisas, remover o acesso impediria um usuário remoto de enumerar contas de usuário e compartilhamentos em seu sistema.</p>
+
+<h2 data-toc-skip="">Configurações gerais de segurança</h2>
+
+<ul>
+  <li>Remover todos os serviços desnecessários do sistema.</li>
+  <li>Habilite o EFS (Encrypting File System, sistema de arquivos de criptografia incorporado) com NTFS ou BitLocker no Windows Server.</li>
+  <li>Não use AUTORUN. Caso contrário, o código não confiável pode ser executado sem o conhecimento direto do usuário; por exemplo, os atacantes podem colocar um CD na máquina e fazer com que seu próprio script seja executado.</li>
+  <li>Exibir um aviso legal antes do login do usuário exemplo: “O uso não autorizado deste computador e recursos de rede é proibido…”</li>
+  <li>Exija ctrl+Alt+Del para logins interativos.</li>
+  <li>Configure um limite de inatividade da máquina para proteger sessões ociosas.</li>
+  <li>Certifique-se de que todos os volumes estejam usando o sistema de arquivos NTFS.</li>
+  <li>Configure permissões locais de arquivo/pasta. Outro procedimento de segurança importante, mas muitas vezes negligenciado, é bloquear as permissões de nível de arquivo para o servidor. Por padrão, o Windows não aplica restrições específicas em nenhum arquivo ou pasta local; o grupo Todos recebe permissões completas para a maioria da máquina. Remova esse grupo e, em vez disso, conceda acesso a arquivos e pastas usando grupos baseados em papel com base no princípio de menor privilégio. Todas as tentativas devem ser feitas para remover o Guest, Everyone e ANONYMOUS LOGON das listas de direitos do usuário.</li>
+  <li>Defina a data/hora do sistema e configure-a para sincronizar com servidores NTP.</li>
+</ul>
+
+<h2 data-toc-skip="">Configurações de políticas de auditoria</h2>
+
+<ul>
+  <li>Habilitar a política de auditoria de acordo com as melhores práticas da política de auditoria.</li>
+  <li>Configure o envio de log para algum SIEM para monitoramento.</li>
+  <li>Guia de segurança de software</li>
+  <li>Instale e habilite o software antivírus. Configure-o para atualizar diariamente.</li>
+  <li>Instale e habilite o software anti-spyware. Configure-o para atualizar diariamente.</li>
+  <li>Instale software para verificar a integridade de arquivos críticos do sistema operacional. O Windows tem um recurso chamado Windows Resource Protection que verifica automaticamente certos arquivos-chave e os substitui se eles forem corrompidos.</li>
+</ul>
+
+<h2 id="referência"><span class="mr-2">REFERÊNCIA</span><a href="#referência" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2>
+
+<p><a href="https://www.linkedin.com/pulse/hardening-de-servidores-leandro-cabral/?originalSubdomain=pt">https://www.linkedin.com/pulse/hardening-de-servidores-leandro-cabral/?originalSubdomain=pt</a></p>
+
+<p><a href="https://blog.convisoappsec.com/hardening-de-sistemas-o-que-e-e-como-executar/">https://blog.convisoappsec.com/hardening-de-sistemas-o-que-e-e-como-executar/</a></p>
+
+<p><a href="https://www.osnn.net/threads/help-with-security-settings.42359/">https://www.osnn.net/threads/help-with-security-settings.42359/</a></p>
+
+<p><a href="http://www.security-forums.com/viewtopic.php?printertopic=1&amp;t=31900&amp;start=0&amp;postdays=0&amp;postorder=asc&amp;vote=viewresult&amp;sid=459ea285cede97e536ad6947328e47">http://www.security-forums.com/viewtopic.php?printertopic=1&amp;t=31900&amp;start=0&amp;postdays=0&amp;postorder=asc&amp;vote=viewresult&amp;sid=459ea285cede97e536ad6947328e47</a></p>
 
 </div>
 
@@ -625,7 +669,7 @@
   <div class="post-meta mb-3">
     <i class="far fa-folder-open fa-fw mr-1"></i>
     
-      <a href='/categories/blogging/'>Blogging</a>,
+      <a href='/categories/papers/'>Papers</a>,
       <a href='/categories/tutorial/'>Tutorial</a>
   </div>
   
@@ -635,8 +679,11 @@
   <div class="post-tags">
     <i class="fa fa-tags fa-fw mr-1"></i>
       
-      <a href="/tags/favicon/"
-          class="post-tag no-text-decoration" >favicon</a>
+      <a href="/tags/windows/"
+          class="post-tag no-text-decoration" >Windows</a>
+      
+      <a href="/tags/hardening/"
+          class="post-tag no-text-decoration" >Hardening</a>
       
   </div>
   
@@ -671,19 +718,19 @@
 
     
       
-        <a href="https://twitter.com/intent/tweet?text=Customize%20the%20Favicon%20-%20Inaciot&url=http%3A%2F%2Flocalhost%3A4000%2Fposts%2Fcustomize-the-favicon%2F" data-toggle="tooltip" data-placement="top"
+        <a href="https://twitter.com/intent/tweet?text=Hardening%20Windows%20Server%20-%20Inaciot&url=http%3A%2F%2Flocalhost%3A4000%2Fposts%2FHardening-Windows-Server%2F" data-toggle="tooltip" data-placement="top"
           title="Twitter" target="_blank" rel="noopener" aria-label="Twitter">
           <i class="fa-fw fab fa-twitter"></i>
         </a>
     
       
-        <a href="https://www.facebook.com/sharer/sharer.php?title=Customize%20the%20Favicon%20-%20Inaciot&u=http%3A%2F%2Flocalhost%3A4000%2Fposts%2Fcustomize-the-favicon%2F" data-toggle="tooltip" data-placement="top"
+        <a href="https://www.facebook.com/sharer/sharer.php?title=Hardening%20Windows%20Server%20-%20Inaciot&u=http%3A%2F%2Flocalhost%3A4000%2Fposts%2FHardening-Windows-Server%2F" data-toggle="tooltip" data-placement="top"
           title="Facebook" target="_blank" rel="noopener" aria-label="Facebook">
           <i class="fa-fw fab fa-facebook-square"></i>
         </a>
     
       
-        <a href="https://t.me/share/url?url=http%3A%2F%2Flocalhost%3A4000%2Fposts%2Fcustomize-the-favicon%2F&text=Customize%20the%20Favicon%20-%20Inaciot" data-toggle="tooltip" data-placement="top"
+        <a href="https://t.me/share/url?url=http%3A%2F%2Flocalhost%3A4000%2Fposts%2FHardening-Windows-Server%2F&text=Hardening%20Windows%20Server%20-%20Inaciot" data-toggle="tooltip" data-placement="top"
           title="Telegram" target="_blank" rel="noopener" aria-label="Telegram">
           <i class="fa-fw fab fa-telegram"></i>
         </a>
@@ -945,20 +992,20 @@
   
 
   
-
-  
-
-  
-
-  
-
-  
-
-
-  
-
-  
     
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
   
 
   
@@ -1041,7 +1088,7 @@ Naming and...
       
       
       <div class="card">
-        <a href="/posts/Hardening-Windows-Server/">
+        <a href="/posts/customize-the-favicon/">
           <div class="card-body">
             <!--
   Date format snippet
@@ -1053,13 +1100,13 @@ Naming and...
 
 
 <em class="small"
-    data-ts="1670122800"
+    data-ts="1565454840"
     data-df="ll"
     >
-  Dec  4, 2022
+  Aug 10, 2019
 </em>
 
-            <h3 class="pt-0 mt-1 mb-3" data-toc-skip>Hardening Windows Server</h3>
+            <h3 class="pt-0 mt-1 mb-3" data-toc-skip>Customize the Favicon</h3>
             <div class="text-muted small">
               <p>
                 
@@ -1068,9 +1115,7 @@ Naming and...
 
 
 
-                Neste meu primeiro artigo, abordarei um termo revisado recentemente de um curso ao qual estou, Server Hardening.
-
-Sendo bem simplista, Hardening seria um conjunto de processos de reforço de seguran...
+                The favicons of Chirpy are placed in the directory assets/img/favicons/. You may want to replace them with your own. The following sections will guide you to create and replace the default favicons...
               </p>
             </div>
           </div>
@@ -1126,16 +1171,16 @@ Sendo bem simplista, Hardening seria um conjunto de processos de reforço de seg
 
 <div class="post-navigation d-flex justify-content-between">
   
-  <a href="/posts/write-a-new-post/" class="btn btn-outline-primary"
+  <a href="/posts/customize-the-favicon/" class="btn btn-outline-primary"
     prompt="Older">
-    <p>Writing a New Post</p>
+    <p>Customize the Favicon</p>
   </a>
   
 
   
-  <a href="/posts/Hardening-Windows-Server/" class="btn btn-outline-primary"
+  <a href="/posts/2019-08-09-Threat-hunting-with-ELK-Detectando-Eventos-do-Windows/" class="btn btn-outline-primary"
     prompt="Newer">
-    <p>Hardening Windows Server</p>
+    <p></p>
   </a>
   
 
@@ -1309,6 +1354,67 @@ Sendo bem simplista, Hardening seria um conjunto de processos de reforço de seg
   </div>
 </footer>
 
+
+    
+      <!--
+  mermaid-js loader
+-->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@9.2.2/dist/mermaid.min.js"></script>
+
+<script>
+  (function () {
+
+    function updateMermaid(event) {
+      if (event.source === window && event.data &&
+        event.data.direction === ModeToggle.ID) {
+
+        const mode = event.data.message;
+
+        if (typeof mermaid === "undefined") {
+          return;
+        }
+
+        let expectedTheme = (mode === ModeToggle.DARK_MODE ? "dark" : "default");
+        let config = {theme: expectedTheme};
+
+        /* Re-render the SVG › <https://github.com/mermaid-js/mermaid/issues/311#issuecomment-332557344> */
+        $(".mermaid").each(function () {
+          let svgCode = $(this).prev().children().html();
+          $(this).removeAttr("data-processed");
+          $(this).html(svgCode);
+        });
+
+        mermaid.initialize(config);
+        mermaid.init(undefined, ".mermaid");
+      }
+    }
+
+    let initTheme = "default";
+
+    if ($("html[data-mode=dark]").length > 0
+      || ($("html[data-mode]").length == 0
+        && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+      initTheme = "dark";
+    }
+
+    let mermaidConf = {
+      theme: initTheme  /* <default|dark|forest|neutral> */
+    };
+
+    /* Create mermaid tag */
+    $("pre").has("code.language-mermaid").each(function () {
+      let svgCode = $(this).children().html();
+      $(this).addClass("unloaded");
+      $(this).after(`<pre class=\"mermaid\">${svgCode}</pre>`);
+    });
+
+    mermaid.initialize(mermaidConf);
+
+    window.addEventListener("message", updateMermaid);
+  })();
+
+</script>
 
     
 
@@ -1491,6 +1597,26 @@ SimpleJekyllSearch({
 
 <script defer src="/assets/js/dist/post.min.js"></script>
 
+
+  <!-- MathJax -->
+  <script>
+  /* see: <https://docs.mathjax.org/en/latest/options/input/tex.html#tex-options> */
+  MathJax = {
+    tex: {
+      inlineMath: [              /* start/end delimiter pairs for in-line math */
+        ['$','$'],
+        ['\\(','\\)']
+      ],
+      displayMath: [             /* start/end delimiter pairs for display math */
+        ['$$', '$$'],
+        ['\\[', '\\]']
+      ]
+    }
+  };
+  </script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js">
+  </script>
 
 
 <!-- commons -->
