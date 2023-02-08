@@ -1,6 +1,6 @@
 ---
 title: Threat hunting
-author: cotes
+author: José Inácio
 date: 2022-26-04
 categories: [Papers, Tutorial]
 tags: [Threat hunting, Windows]
