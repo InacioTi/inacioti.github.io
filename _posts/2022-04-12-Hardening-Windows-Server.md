@@ -1,7 +1,7 @@
 ---
 title: Hardening Windows Server
 author: José Inácio
-date: 2022-12-04
+date: 2022-04-12
 categories: [Papers, Tutorial]
 tags: [Windows,Hardening]
 math: true

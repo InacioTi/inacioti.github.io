@@ -1,7 +1,7 @@
 ---
 title: Threat hunting
 author: José Inácio
-date: 2022-26-04
+date: 2022-04-26
 categories: [Papers, Tutorial]
 tags: [Threat hunting, Windows]
 pin: true

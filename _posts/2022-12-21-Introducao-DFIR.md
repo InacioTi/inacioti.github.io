@@ -1,7 +1,7 @@
 ---
 title: Introducao ao DFIR
 author: José Inácio
-date: 2022-21-12
+date: 2022-12-21
 categories: [Papers, Tutorial]
 tags: [DFIR]
 pin: true
