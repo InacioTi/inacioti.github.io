@@ -4,7 +4,7 @@
   <id>http://localhost:4000/</id>
   <title>Inaciot</title>
   <subtitle>A minimal, responsive, and powerful Jekyll theme for presenting professional writing.</subtitle>
-  <updated>2023-02-08T19:06:09-03:00</updated>
+  <updated>2023-02-09T10:17:52-03:00</updated>
   <author>
     <name>inaciot</name>
     <uri>http://localhost:4000/</uri>
@@ -81,7 +81,7 @@ Quadros
     <link href="http://localhost:4000/posts/Introducao-DFIR/" rel="alternate" type="text/html" title="Introducao ao DFIR" />
     <published>2022-12-21T00:00:00-03:00</published>
   
-    <updated>2023-02-08T17:51:25-03:00</updated>
+    <updated>2023-02-08T19:12:05-03:00</updated>
   
     <id>http://localhost:4000/posts/Introducao-DFIR/</id>
     <content src="http://localhost:4000/posts/Introducao-DFIR/" />
@@ -215,7 +215,7 @@ O erro nos indica se tratar de um Spring boot, então buscamos realizar uma forc
     <link href="http://localhost:4000/posts/Threat-hunting/" rel="alternate" type="text/html" title="Threat hunting" />
     <published>2022-04-26T00:00:00-03:00</published>
   
-    <updated>2023-02-08T17:51:25-03:00</updated>
+    <updated>2023-02-08T19:12:05-03:00</updated>
   
     <id>http://localhost:4000/posts/Threat-hunting/</id>
     <content src="http://localhost:4000/posts/Threat-hunting/" />
