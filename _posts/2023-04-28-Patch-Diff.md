@@ -37,16 +37,15 @@ A comparação do gráfico de fluxo
 
 ![Desktop View](/img/patchdiff/BINDIFF-VIEW.PNG){: width="700" height="202" .w-75 .normal}
 
-Olhando á função vulnerable_function do Codigo1 pelo Binaryninja, percebemos que o tamanho do buffer é de apenas 10 bytes e não é feita nenhuma verificação do tamanho da entrada, Além de ultilizar a função strcpy que não verifica o tamanho do buffer de destino antes de copiar os dados da origem para ele. Portanto, se um usuário inserir uma string maior que 10 bytes ocorrerá um BufferOverflow.
+Olhando á função vulnerable_function do Codigo1 pelo BinaryNinja, percebemos que não é feita nenhuma verificação do tamanho da entrada, Além de ultilizar a função strcpy que não verifica o tamanho do buffer de destino antes de copiar os dados da origem para ele. Portanto, se um usuário inserir uma string maior que 10 bytes ocorrerá um BufferOverflow.
 
 ![Desktop View](/img/patchdiff/Binaryninja-vunc.PNG){: width="700" height="202" .w-75 .normal}
 
-Já nesta versão corrigida no Codigo2, vemos que o tamanho máximo da string de entrada é limitado a 9 caracteres. Além disso, a função strncpy é utilizada em vez de strcpy, e adicionado o parâmetro input_len para que a função saiba o tamanho da string de entrada e juntamente com a inserção manual do caractere nulo de terminação de string. Isso garante que o buffer nunca será preenchido com mais caracteres do que o permitido.
+Já nesta versão corrigida no Codigo2, vemos que o tamanho máximo da string de entrada é limitado a 9 caracteres. Além disso, a função strncpy é utilizada em vez de strcpy. Isso garante que o buffer nunca será preenchido com mais caracteres do que o permitido.
 
 ![Desktop View](/img/patchdiff/Binaryninja-vuncOK.PNG){: width="700" height="202" .w-75 .normal}
 
-Em resumo, as técnicas de Patch Diff são valiosas ferramentas na análise de vulnerabilidades e no desenvolvimento de exploits de dia zero. Ao comparar as mudanças entre duas versões de um software ou sistema, é possível identificar vulnerabilidades introduzidas, corrigidas ou não corrigidas, permitindo que medidas adequadas de segurança sejam tomadas.
-
+Em resumo, as técnicas de Patch Diffing são valiosas ferramentas na análise de vulnerabilidades e no desenvolvimento de exploits de dia zero. Ao comparar as mudanças entre duas versões de um software ou sistema, é possível identificar vulnerabilidades introduzidas, corrigidas ou não corrigidas, permitindo que medidas adequadas de segurança sejam tomadas.
 
 ## REFERÊNCIA
 <https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock>
