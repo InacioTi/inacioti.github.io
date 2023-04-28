@@ -1,5 +1,5 @@
 ---
-title: Patch Diff
+title: Patch Diffing Basic
 author: José Inácio
 date: 2023-04-28
 categories: [Papers, Reverse]
@@ -7,60 +7,13 @@ tags: [Reverse]
 pin: true
 ---
 
-Patch Diff (Diferença de patch), refere-se a uma técnica usada para comparar diferenças entre duas versões de código-fonte.
+Patch Diffing (Diferença de patch), refere-se a uma técnica usada para comparar diferenças entre duas versões de código-fonte.
 
-Basicamente, o Patch Diff é uma forma de representar as mudanças em um código-fonte de uma versão para outra. Ao comparar às duas versões, é possível identificar os trechos de código que foram alterados, removidos ou adicionados, seja para identificar correções de bugs, melhorias ou novos recursos. Essa técnica é amplamente utilizada em sistemas de controle de versão de software, como o Git, para permitir que os desenvolvedores colaborem de forma eficiente em um mesmo projeto e façam o acompanhamento das mudanças no código-fonte ao longo do tempo.
+Basicamente, o Patch Diffing é uma forma de representar as mudanças em um código-fonte de uma versão para outra. Ao comparar às duas versões, é possível identificar os trechos de código que foram alterados, removidos ou adicionados, seja para identificar correções de bugs, melhorias ou novos recursos. Essa técnica é amplamente utilizada em sistemas de controle de versão de software, como o Git, para permitir que os desenvolvedores colaborem de forma eficiente em um mesmo projeto e façam o acompanhamento das mudanças no código-fonte ao longo do tempo.
 
 Além disso, é útil para realizar análises de segurança em sistemas que possam estar vulneráveis a ataques ou explorações. Por exemplo, pode-se comparar uma versão do software antes e depois de uma correção de segurança ter sido aplicada. Assim, com o entendimento do código vulnerável pode permitir a criação de exploits para exploração da mesma.
 
-Para este exemplo usaremos dois códigos em C simples;
-
-<h4>O codigo abaixo contem uma vulnerabilidade de BufferOverFlow;</h4>
-
-```C
-#include <stdio.h>
-#include <string.h>
-
-
-void vulnerable_function(char* input) {
-    char buffer[10];
-    strcpy(buffer, input);
-    printf("Input received: %s\n", buffer);
-}
-
-int main() {
-    char input_string[20];
-    printf("Enter a string: ");
-    scanf("%s", input_string);
-    vulnerable_function(input_string);
-    return 0;
-}
-```
-
-<h4>Já o codigo abaixo contem o seu "patch" de correção;</h4>
-
-```C
-#include <stdio.h>
-#include <string.h>
-
-void vulnerable_function(char* input, size_t input_len) {
-    if (input_len > 9) {
-        input_len = 9;
-    }
-    char buffer[10];
-    strncpy(buffer, input, input_len);
-    buffer[input_len] = '\0';
-    printf("Input received: %s\n", buffer);
-}
-
-int main() {
-    char input_string[20];
-    printf("Enter a string: ");
-    scanf("%19s", input_string);
-    vulnerable_function(input_string, strlen(input_string));
-    return 0;
-}
-```
+Para este exemplo usaremos dois códigos em C simples um contento um vulnerabilidade e outro com sua correção, chamerei de Codigo1 e Codigo2.
 
 Para realizar o Patch Diff, usaremos as ferramentas abaixo;
 
@@ -68,24 +21,32 @@ Para realizar o Patch Diff, usaremos as ferramentas abaixo;
 Ghidra é uma ferramenta de engenharia reversa gratuita e de código aberta desenvolvida pela Agência de Segurança Nacional dos Estados Unidos. Neste contexto, o Ghidra foi usado para criar exportações binárias para ambos os arquivos para que eles pudessem ser comparados no BinDiff, vale lembrar que o pluguin "BinExport" deve ser adcionado ao Ghidra.
 
 <h5>BinDiff</h5>
-BinDiff é uma ferramenta de análise de binários que é amplamente utilizada por pesquisadores de segurança para comparar duas versões de um software e identificar as diferenças entre elas. Ele é desenvolvido pela Zynamics, uma empresa adquirida pela Google em 2011, e é amplamente utilizado em análises de vulnerabilidades de software, detecção de malware e engenharia reversa.
+BinDiff é uma ferramenta de análise de binários que é amplamente utilizada por pesquisadores de segurança para comparar duas versões de um software e identificar as diferenças entre elas. Ele é desenvolvido pela Zynamics, uma empresa adquirida pela Google em 2011, e é amplamente utilizado em análises de vulnerabilidades de software, detecção de malware e engenharia reversa. Existem alternativas gratuitas ao BinDiff: DarunGrim e PatchDiff2 são especializados em Patch Diffing.
 
 <h5>Binary Ninja</h5>
 Binary Ninja é uma plataforma de engenharia reversa desenvolvida pela Vector 35 Inc. Ela pode desmontar um binário e exibir a desmontagem em visualizações lineares ou gráficas. Ele realiza uma análise profunda automatizada do código, gerando informações que ajudam a analisar um binário.
 
-Em resumo, as técnicas de Patch Diff são valiosas ferramentas na análise de vulnerabilidades e no desenvolvimento de exploits de dia zero. Ao comparar as mudanças entre duas versões de um software ou sistema, é possível identificar vulnerabilidades introduzidas, corrigidas ou não corrigidas, permitindo que medidas adequadas de segurança sejam tomadas.
 
-# Quadros
+# BinDiff
+
+Uma boa abordagem ao executar a diferenciação de patches é procurar o par de funções que mostra/contém a maioria das modificações. Isso pode ser feito usando o valor "Similaridade" em BinDiff. A função com o menor valor de similaridade é "vulnerable_function()"
 
 ![Desktop View](/img/patchdiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
+
+A comparação do gráfico de fluxo
 
 ![Desktop View](/img/patchdiff/BINDIFF-VIEW.PNG){: width="700" height="202" .w-75 .normal}
 
-![Desktop View](/img/patchdiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
+Olhando á função vulnerable_function do Codigo1 pelo Binaryninja, percebemos que o tamanho do buffer é de apenas 10 bytes e não é feita nenhuma verificação do tamanho da entrada, Além de ultilizar a função strcpy que não verifica o tamanho do buffer de destino antes de copiar os dados da origem para ele. Portanto, se um usuário inserir uma string maior que 10 bytes ocorrerá um BufferOverflow.
 
 ![Desktop View](/img/patchdiff/Binaryninja-vunc.PNG){: width="700" height="202" .w-75 .normal}
 
+Já nesta versão corrigida no Codigo2, vemos que o tamanho máximo da string de entrada é limitado a 9 caracteres. Além disso, a função strncpy é utilizada em vez de strcpy, e adicionado o parâmetro input_len para que a função saiba o tamanho da string de entrada e juntamente com a inserção manual do caractere nulo de terminação de string. Isso garante que o buffer nunca será preenchido com mais caracteres do que o permitido.
+
 ![Desktop View](/img/patchdiff/Binaryninja-vuncOK.PNG){: width="700" height="202" .w-75 .normal}
+
+Em resumo, as técnicas de Patch Diff são valiosas ferramentas na análise de vulnerabilidades e no desenvolvimento de exploits de dia zero. Ao comparar as mudanças entre duas versões de um software ou sistema, é possível identificar vulnerabilidades introduzidas, corrigidas ou não corrigidas, permitindo que medidas adequadas de segurança sejam tomadas.
+
 
 ## REFERÊNCIA
 <https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock>
