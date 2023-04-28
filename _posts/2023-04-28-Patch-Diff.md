@@ -78,11 +78,19 @@ Em resumo, as técnicas de Patch Diff são valiosas ferramentas na análise de v
 
 # Quadros
 
-![Desktop View](/img/papers/PatchDiff/excel.png){: width="700" height="202" .w-75 .normal}
+![Desktop View](/img/PatchDiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
+
+![Desktop View](/img/PatchDiff/BINDIFF-VIEW.PNG){: width="700" height="202" .w-75 .normal}
+
+![Desktop View](/img/PatchDiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
+
+![Desktop View](/img/PatchDiff/Binaryninja-vunc.PNG){: width="700" height="202" .w-75 .normal}
+
+![Desktop View](/img/PatchDiff/Binaryninja-vuncOK.PNG){: width="700" height="202" .w-75 .normal}
 
 ## REFERÊNCIA
-<https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock/>
+<https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock>
 <https://www.zynamics.com/software.html>
-<https://www.linkedin.com/pulse/cve-2023-24869-remote-procedure-call-runtime-code-execution-hawes/>
-<https://ihack4falafel.github.io/Patch-Diffing-with-Ghidra/:
+<https://www.linkedin.com/pulse/cve-2023-24869-remote-procedure-call-runtime-code-execution-hawes>
+<https://ihack4falafel.github.io/Patch-Diffing-with-Ghidra>
 
