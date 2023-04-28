@@ -77,15 +77,15 @@ Em resumo, as técnicas de Patch Diff são valiosas ferramentas na análise de v
 
 # Quadros
 
-![Desktop View](/img/PatchDiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
+![Desktop View](/img/patchdiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
 
-![Desktop View](/img/PatchDiff/BINDIFF-VIEW.PNG){: width="700" height="202" .w-75 .normal}
+![Desktop View](/img/patchdiff/BINDIFF-VIEW.PNG){: width="700" height="202" .w-75 .normal}
 
-![Desktop View](/img/PatchDiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
+![Desktop View](/img/patchdiff/BINDIFF-SIMI.PNG){: width="700" height="202" .w-75 .normal}
 
-![Desktop View](/img/PatchDiff/Binaryninja-vunc.PNG){: width="700" height="202" .w-75 .normal}
+![Desktop View](/img/patchdiff/Binaryninja-vunc.PNG){: width="700" height="202" .w-75 .normal}
 
-![Desktop View](/img/PatchDiff/Binaryninja-vuncOK.PNG){: width="700" height="202" .w-75 .normal}
+![Desktop View](/img/patchdiff/Binaryninja-vuncOK.PNG){: width="700" height="202" .w-75 .normal}
 
 ## REFERÊNCIA
 <https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock>
