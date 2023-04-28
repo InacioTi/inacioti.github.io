@@ -14,7 +14,48 @@ Basicamente, o Patch Diff é uma forma de representar as mudanças em um código
 
 Além disso, é útil para realizar análises de segurança em sistemas que possam estar vulneráveis a ataques ou explorações. Por exemplo, pode-se comparar uma versão do software antes e depois de uma correção de segurança ter sido aplicada. Assim, com o entendimento do código vulnerável pode permitir a criação de exploits para exploração da mesma.
 
-Para este exemplo usaremos dois códigos em C simples, um contendo uma vulnerabilidade de BufferOverFlow, e outro contento o seu "patch" de correção. Usaremos as ferramentas abaixo;
+Para este exemplo usaremos dois códigos em C simples, um contendo uma vulnerabilidade de BufferOverFlow, e outro contento o seu "patch" de correção. 
+
+#include <stdio.h>
+#include <string.h>
+
+void vulnerable_function(char* input) {
+    char buffer[10];
+    strcpy(buffer, input);
+    printf("Input received: %s\n", buffer);
+}
+
+int main() {
+    char input_string[20];
+    printf("Enter a string: ");
+    scanf("%s", input_string);
+    vulnerable_function(input_string);
+    return 0;
+}
+
+
+#include <stdio.h>
+#include <string.h>
+
+void vulnerable_function(char* input, size_t input_len) {
+    if (input_len > 9) {
+        input_len = 9;
+    }
+    char buffer[10];
+    strncpy(buffer, input, input_len);
+    buffer[input_len] = '\0';
+    printf("Input received: %s\n", buffer);
+}
+
+int main() {
+    char input_string[20];
+    printf("Enter a string: ");
+    scanf("%19s", input_string);
+    vulnerable_function(input_string, strlen(input_string));
+    return 0;
+}
+
+Usaremos as ferramentas abaixo;
 
 <h5>Ghidra</h5>
 Ghidra é uma ferramenta de engenharia reversa gratuita e de código aberta desenvolvida pela Agência de Segurança Nacional dos Estados Unidos. Neste contexto, o Ghidra foi usado para criar exportações binárias para ambos os arquivos para que eles pudessem ser comparados no BinDiff, vale lembrar que o pluguin "BinExport" deve ser adcionado ao Ghidra.
