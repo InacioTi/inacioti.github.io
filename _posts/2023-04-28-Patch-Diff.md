@@ -16,16 +16,24 @@ Além disso, é útil para realizar análises de segurança em sistemas que poss
 
 Para este exemplo usaremos dois códigos em C simples, um contendo uma vulnerabilidade de BufferOverFlow, e outro contento o seu "patch" de correção. Usaremos as ferramentas abaixo;
 
-Ghidra
+<h5>Ghidra</h5>
 Ghidra é uma ferramenta de engenharia reversa gratuita e de código aberta desenvolvida pela Agência de Segurança Nacional dos Estados Unidos. Neste contexto, o Ghidra foi usado para criar exportações binárias para ambos os arquivos para que eles pudessem ser comparados no BinDiff, vale lembrar que o pluguin "BinExport" deve ser adcionado ao Ghidra.
 
-BinDiff
+<h5>BinDiff</h5>
 BinDiff é uma ferramenta de análise de binários que é amplamente utilizada por pesquisadores de segurança para comparar duas versões de um software e identificar as diferenças entre elas. Ele é desenvolvido pela Zynamics, uma empresa adquirida pela Google em 2011, e é amplamente utilizado em análises de vulnerabilidades de software, detecção de malware e engenharia reversa.
 
-Binary Ninja
+<h5>Binary Ninja</h5>
 Binary Ninja é uma plataforma de engenharia reversa desenvolvida pela Vector 35 Inc. Ela pode desmontar um binário e exibir a desmontagem em visualizações lineares ou gráficas. Ele realiza uma análise profunda automatizada do código, gerando informações que ajudam a analisar um binário.
 
 Em resumo, as técnicas de Patch Diff são valiosas ferramentas na análise de vulnerabilidades e no desenvolvimento de exploits de dia zero. Ao comparar as mudanças entre duas versões de um software ou sistema, é possível identificar vulnerabilidades introduzidas, corrigidas ou não corrigidas, permitindo que medidas adequadas de segurança sejam tomadas.
 
 # Quadros
+
+![Desktop View](/img/papers/PatchDiff/excel.png){: width="700" height="202" .w-75 .normal}
+
+## REFERÊNCIA
+<https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock/>
+<https://www.zynamics.com/software.html>
+<https://www.linkedin.com/pulse/cve-2023-24869-remote-procedure-call-runtime-code-execution-hawes/>
+<https://ihack4falafel.github.io/Patch-Diffing-with-Ghidra/:
 
