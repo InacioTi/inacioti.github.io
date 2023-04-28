@@ -1,5 +1,5 @@
 ---
-title: Patch Diffing Basic
+title: Basic Patch Diffing
 author: José Inácio
 date: 2023-04-28
 categories: [Papers, Reverse]
