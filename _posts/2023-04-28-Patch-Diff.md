@@ -45,7 +45,7 @@ Já nesta versão corrigida no Codigo2, vemos que o tamanho máximo da string de
 
 ![Desktop View](/img/patchdiff/Binaryninja-vuncOK.PNG){: width="700" height="202" .w-75 .normal}
 
-Em resumo, as técnicas de Patch Diffing são valiosas ferramentas na análise de vulnerabilidades e no desenvolvimento de exploits de dia zero. Ao comparar as mudanças entre duas versões de um software ou sistema, é possível identificar vulnerabilidades introduzidas, corrigidas ou não corrigidas, permitindo que medidas adequadas de segurança sejam tomadas.
+Em resumo, as técnicas de Patch Diffing são valiosas ferramentas na análise de vulnerabilidades e no desenvolvimento de exploits. Ao comparar as mudanças entre duas versões de um software ou sistema, é possível identificar vulnerabilidades introduzidas, corrigidas ou não corrigidas, permitindo que medidas adequadas de segurança sejam tomadas.
 
 ## REFERÊNCIA
 <https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock>
