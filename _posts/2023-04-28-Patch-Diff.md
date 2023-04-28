@@ -14,10 +14,14 @@ Basicamente, o Patch Diff é uma forma de representar as mudanças em um código
 
 Além disso, é útil para realizar análises de segurança em sistemas que possam estar vulneráveis a ataques ou explorações. Por exemplo, pode-se comparar uma versão do software antes e depois de uma correção de segurança ter sido aplicada. Assim, com o entendimento do código vulnerável pode permitir a criação de exploits para exploração da mesma.
 
-Para este exemplo usaremos dois códigos em C simples, um contendo uma vulnerabilidade de BufferOverFlow, e outro contento o seu "patch" de correção. 
+Para este exemplo usaremos dois códigos em C simples;
 
+O codigo abaixo contem uma vulnerabilidade de BufferOverFlow;
+
+```C
 #include <stdio.h>
 #include <string.h>
+
 
 void vulnerable_function(char* input) {
     char buffer[10];
@@ -32,8 +36,11 @@ int main() {
     vulnerable_function(input_string);
     return 0;
 }
+```
 
+Já o codigo abaixo contem o seu "patch" de correção;
 
+```C
 #include <stdio.h>
 #include <string.h>
 
@@ -54,8 +61,9 @@ int main() {
     vulnerable_function(input_string, strlen(input_string));
     return 0;
 }
+```
 
-Usaremos as ferramentas abaixo;
+Para realizar o Patch Diff, usaremos as ferramentas abaixo;
 
 <h5>Ghidra</h5>
 Ghidra é uma ferramenta de engenharia reversa gratuita e de código aberta desenvolvida pela Agência de Segurança Nacional dos Estados Unidos. Neste contexto, o Ghidra foi usado para criar exportações binárias para ambos os arquivos para que eles pudessem ser comparados no BinDiff, vale lembrar que o pluguin "BinExport" deve ser adcionado ao Ghidra.
