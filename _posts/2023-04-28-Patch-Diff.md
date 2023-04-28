@@ -1,4 +1,3 @@
-
 ---
 title: Patch Diff
 author: José Inácio
@@ -16,7 +15,7 @@ Além disso, é útil para realizar análises de segurança em sistemas que poss
 
 Para este exemplo usaremos dois códigos em C simples;
 
-O codigo abaixo contem uma vulnerabilidade de BufferOverFlow;
+<h4>O codigo abaixo contem uma vulnerabilidade de BufferOverFlow;</h4>
 
 ```C
 #include <stdio.h>
@@ -38,7 +37,7 @@ int main() {
 }
 ```
 
-Já o codigo abaixo contem o seu "patch" de correção;
+<h4>Já o codigo abaixo contem o seu "patch" de correção;</h4>
 
 ```C
 #include <stdio.h>
