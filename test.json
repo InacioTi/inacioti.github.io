@@ -1,8 +1,8 @@
 {
-    "url": "https://inacioti.github.io/test.yaml",
+    "url": "https://github.com/InacioTi/inacioti.github.io/blob/main/test.yaml",
     "urls": [
         {
-            "url": "https://inacioti.github.io/test.yaml",
+            "url": "https://github.com/InacioTi/inacioti.github.io/blob/main/test.yaml",
             "nome": "Foo"
         }
     ]
